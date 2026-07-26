@@ -11,8 +11,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-catad}
       TZ: Asia/Jakarta
     ports:
-      # 1062 = port Postgres pada rentang alokasi 1061–1070
-      - "1062:5432"
+      # Rentang alokasi Catad: 1061–1070. 1062 = Postgres.
+      # Bisa digeser lewat PORT_DB di .env tanpa menyunting berkas ini.
+      - "${PORT_DB:-1062}:5432"
     volumes:
       - catad_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -53,8 +54,9 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       TZ: Asia/Jakarta
     ports:
-      # 1061 = port aplikasi pada rentang alokasi 1061–1070
-      - "1061:3000"
+      # Rentang alokasi Catad: 1061–1070. 1061 = aplikasi.
+      # Bisa digeser lewat PORT_APP di .env tanpa menyunting berkas ini.
+      - "${PORT_APP:-1061}:3000"
 
 volumes:
   catad_pgdata:
