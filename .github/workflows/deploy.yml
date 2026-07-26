@@ -91,7 +91,11 @@ jobs:
           INANG: ${{ secrets.SSH_HOST }}
           PORT: ${{ secrets.SSH_PORT }}
           AKUN: ${{ secrets.SSH_USER }}
-          TUJUAN: ${{ vars.DEPLOY_PATH || '~/catad' }}
+          # Relatif terhadap direktori login, BUKAN "~/catad": path ini dikutip
+          # saat dikirim lewat ssh, dan tanda ~ di dalam kutip tidak pernah
+          # diekspansi shell — server malah mencari direktori bernama harfiah
+          # "~". Path relatif maupun absolut (mis. /srv/catad) aman dikutip.
+          TUJUAN: ${{ vars.DEPLOY_PATH || 'catad' }}
         run: |
           ssh -i ~/.ssh/id_deploy -p "${PORT:-22}" "$AKUN@$INANG" "mkdir -p '$TUJUAN'"
 
@@ -112,7 +116,11 @@ jobs:
           INANG: ${{ secrets.SSH_HOST }}
           PORT: ${{ secrets.SSH_PORT }}
           AKUN: ${{ secrets.SSH_USER }}
-          TUJUAN: ${{ vars.DEPLOY_PATH || '~/catad' }}
+          # Relatif terhadap direktori login, BUKAN "~/catad": path ini dikutip
+          # saat dikirim lewat ssh, dan tanda ~ di dalam kutip tidak pernah
+          # diekspansi shell — server malah mencari direktori bernama harfiah
+          # "~". Path relatif maupun absolut (mis. /srv/catad) aman dikutip.
+          TUJUAN: ${{ vars.DEPLOY_PATH || 'catad' }}
         run: |
           ssh -i ~/.ssh/id_deploy -p "${PORT:-22}" "$AKUN@$INANG" \
             "chmod +x '$TUJUAN/scripts/deploy-remote.sh' && '$TUJUAN/scripts/deploy-remote.sh'"
