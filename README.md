@@ -48,6 +48,36 @@ service `migrasi` sebelum aplikasi hidup.
 
 Dua toko demo itu sekaligus membuktikan pemisahan data antar tenant.
 
+### Deploy otomatis (GitHub Actions)
+
+Setiap push atau merge ke `master` menjalankan
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): diuji dulu,
+baru dikirim ke server.
+
+1. **Uji** — pasang dependensi, generate Prisma Client, periksa tipe, jalankan
+   uji unit. Kalau tahap ini merah, deploy tidak dijalankan sama sekali.
+2. **Deploy** — masuk lewat SSH, salin berkas proyek dengan `rsync`, lalu
+   jalankan [`scripts/deploy-remote.sh`](scripts/deploy-remote.sh) yang
+   membangun ulang image dan menyalakan `docker compose`.
+
+Secret yang dibutuhkan di repositori: `SSH_HOST`, `SSH_PORT`, `SSH_USER`, dan
+`SSH_PRIVATE_KEY`. Direktori tujuan bawaannya `catad` (relatif terhadap
+direktori login) dan bisa diubah lewat variabel repositori `DEPLOY_PATH`.
+
+Server perlu punya `docker` (dengan plugin `docker compose`, bukan
+`docker-compose` gaya lama), `rsync`, dan `curl`. Ketiganya diperiksa dulu di
+awal deploy supaya galatnya jelas kalau ada yang kurang.
+
+**Berkas `.env` di server dibuat sekali saja**, pada deploy pertama, dengan
+sandi basis data dan `JWT_SECRET` yang diacak. Deploy berikutnya tidak pernah
+menimpanya — kalau sandi basis data berubah, volume Postgres yang sudah berisi
+data akan menolak koneksi. Berkas itu juga dikecualikan dari `rsync --delete`,
+jadi aman disunting langsung di server. Isian bawaannya `SEED_DEMO=false`
+supaya akun demo berkata sandi umum tidak ikut terpasang di server.
+
+Deploy tidak pernah berjalan dua kali bersamaan; kalau ada push beruntun,
+yang berikutnya mengantre sampai yang sebelumnya selesai.
+
 ### Pengembangan tanpa Docker
 
 ```bash
