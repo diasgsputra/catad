@@ -1,0 +1,274 @@
+// Catad — Catat Digital
+// Skema multi-tenant: setiap baris data operasional terikat ke satu Toko (tenant).
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Paket {
+  GRATIS
+  PRO
+}
+
+enum Peran {
+  PEMILIK
+  KASIR
+}
+
+enum MetodeBayar {
+  TUNAI
+  QRIS
+  TRANSFER
+  KARTU
+}
+
+enum StatusTransaksi {
+  SELESAI
+  DIBATALKAN
+}
+
+enum TipeMutasi {
+  MASUK
+  KELUAR
+  PENJUALAN
+  PENYESUAIAN
+  PEMBATALAN
+}
+
+enum StatusLangganan {
+  AKTIF
+  KEDALUWARSA
+  DIBATALKAN
+}
+
+/// Tenant. Satu Toko = satu ruang data yang terisolasi penuh.
+model Toko {
+  id            String   @id @default(cuid())
+  nama          String
+  slug          String   @unique
+  jenisUsaha    String   @default("Warung / Toko Kelontong")
+  alamat        String?
+  telepon       String?
+  paket         Paket    @default(GRATIS)
+  /// Akhir masa uji coba Pro (14 hari sejak daftar).
+  trialSampai   DateTime?
+  /// Akhir masa berlangganan Pro berbayar.
+  proSampai     DateTime?
+  /// Ditampilkan di header nota.
+  catatanNota   String?  @default("Terima kasih sudah berbelanja 🙏")
+  /// Persen pajak/servis yang otomatis diterapkan di kasir (0 = nonaktif).
+  persenPajak   Int      @default(0)
+  /// Nomor WhatsApp untuk kirim nota digital.
+  waToko        String?
+  dibuatPada    DateTime @default(now())
+  diubahPada    DateTime @updatedAt
+
+  pengguna     Pengguna[]
+  kategori     Kategori[]
+  produk       Produk[]
+  transaksi    Transaksi[]
+  mutasiStok   MutasiStok[]
+  pengeluaran  Pengeluaran[]
+  pelanggan    Pelanggan[]
+  langganan    Langganan[]
+
+  @@index([slug])
+}
+
+model Pengguna {
+  id           String    @id @default(cuid())
+  tokoId       String
+  nama         String
+  email        String    @unique
+  kataSandiHash String
+  peran        Peran     @default(KASIR)
+  aktif        Boolean   @default(true)
+  masukTerakhir DateTime?
+  dibuatPada   DateTime  @default(now())
+  diubahPada   DateTime  @updatedAt
+
+  toko        Toko          @relation(fields: [tokoId], references: [id], onDelete: Cascade)
+  transaksi   Transaksi[]
+  mutasiStok  MutasiStok[]
+  pengeluaran Pengeluaran[]
+
+  @@index([tokoId])
+  @@index([email])
+}
+
+model Kategori {
+  id         String   @id @default(cuid())
+  tokoId     String
+  nama       String
+  warna      String   @default("#12695A")
+  urutan     Int      @default(0)
+  dibuatPada DateTime @default(now())
+
+  toko   Toko     @relation(fields: [tokoId], references: [id], onDelete: Cascade)
+  produk Produk[]
+
+  @@unique([tokoId, nama])
+  @@index([tokoId])
+}
+
+model Produk {
+  id          String   @id @default(cuid())
+  tokoId      String
+  kategoriId  String?
+  nama        String
+  /// Kode barang / barcode. Unik per toko.
+  kode        String?
+  satuan      String   @default("pcs")
+  hargaJual   Int
+  /// Harga beli / modal (HPP) — dipakai menghitung laba & daftar belanja.
+  hargaModal  Int      @default(0)
+  stok        Int      @default(0)
+  stokMinimum Int      @default(5)
+  /// Produk jasa/tanpa stok (mis. jasa cuci) → stok tidak dikurangi.
+  lacakStok   Boolean  @default(true)
+  aktif       Boolean  @default(true)
+  dibuatPada  DateTime @default(now())
+  diubahPada  DateTime @updatedAt
+
+  toko     Toko            @relation(fields: [tokoId], references: [id], onDelete: Cascade)
+  kategori Kategori?       @relation(fields: [kategoriId], references: [id], onDelete: SetNull)
+  item     ItemTransaksi[]
+  mutasi   MutasiStok[]
+
+  @@unique([tokoId, kode])
+  @@index([tokoId])
+  @@index([tokoId, aktif])
+  @@index([kategoriId])
+}
+
+model Pelanggan {
+  id         String   @id @default(cuid())
+  tokoId     String
+  nama       String
+  telepon    String?
+  catatan    String?
+  dibuatPada DateTime @default(now())
+
+  toko      Toko        @relation(fields: [tokoId], references: [id], onDelete: Cascade)
+  transaksi Transaksi[]
+
+  @@index([tokoId])
+}
+
+model Transaksi {
+  id          String          @id @default(cuid())
+  tokoId      String
+  penggunaId  String?
+  pelangganId String?
+  /// Nomor nota yang tampil ke pembeli, mis. "TRX-20260725-0007".
+  nomor       String
+  /// Kode publik singkat untuk nota digital yang bisa dibagikan.
+  kodeNota    String          @unique
+  subtotal    Int
+  diskon      Int             @default(0)
+  pajak       Int             @default(0)
+  total       Int
+  /// Total modal (HPP) semua item — disimpan agar laporan laba tetap akurat
+  /// walau harga modal produk berubah di kemudian hari.
+  totalModal  Int             @default(0)
+  laba        Int             @default(0)
+  metodeBayar MetodeBayar     @default(TUNAI)
+  dibayar     Int             @default(0)
+  kembalian   Int             @default(0)
+  catatan     String?
+  status      StatusTransaksi @default(SELESAI)
+  dibuatPada  DateTime        @default(now())
+
+  toko      Toko            @relation(fields: [tokoId], references: [id], onDelete: Cascade)
+  pengguna  Pengguna?       @relation(fields: [penggunaId], references: [id], onDelete: SetNull)
+  pelanggan Pelanggan?      @relation(fields: [pelangganId], references: [id], onDelete: SetNull)
+  item      ItemTransaksi[]
+
+  @@unique([tokoId, nomor])
+  @@index([tokoId, dibuatPada])
+  @@index([tokoId, status])
+  @@index([kodeNota])
+}
+
+model ItemTransaksi {
+  id          String  @id @default(cuid())
+  transaksiId String
+  produkId    String?
+  /// Nama & harga disalin saat transaksi agar riwayat tidak berubah
+  /// ketika produk diedit atau dihapus.
+  namaProduk  String
+  satuan      String  @default("pcs")
+  hargaSatuan Int
+  modalSatuan Int     @default(0)
+  qty         Int
+  diskon      Int     @default(0)
+  subtotal    Int
+
+  transaksi Transaksi @relation(fields: [transaksiId], references: [id], onDelete: Cascade)
+  produk    Produk?   @relation(fields: [produkId], references: [id], onDelete: SetNull)
+
+  @@index([transaksiId])
+  @@index([produkId])
+}
+
+model MutasiStok {
+  id           String     @id @default(cuid())
+  tokoId       String
+  produkId     String
+  penggunaId   String?
+  tipe         TipeMutasi
+  /// Positif = stok bertambah, negatif = stok berkurang.
+  qty          Int
+  stokSebelum  Int
+  stokSesudah  Int
+  catatan      String?
+  /// Id transaksi terkait bila mutasi berasal dari penjualan/pembatalan.
+  refTransaksi String?
+  dibuatPada   DateTime   @default(now())
+
+  toko     Toko      @relation(fields: [tokoId], references: [id], onDelete: Cascade)
+  produk   Produk    @relation(fields: [produkId], references: [id], onDelete: Cascade)
+  pengguna Pengguna? @relation(fields: [penggunaId], references: [id], onDelete: SetNull)
+
+  @@index([tokoId, dibuatPada])
+  @@index([produkId, dibuatPada])
+}
+
+model Pengeluaran {
+  id         String   @id @default(cuid())
+  tokoId     String
+  penggunaId String?
+  kategori   String
+  keterangan String?
+  jumlah     Int
+  tanggal    DateTime @default(now())
+  dibuatPada DateTime @default(now())
+
+  toko     Toko      @relation(fields: [tokoId], references: [id], onDelete: Cascade)
+  pengguna Pengguna? @relation(fields: [penggunaId], references: [id], onDelete: SetNull)
+
+  @@index([tokoId, tanggal])
+}
+
+/// Riwayat pembayaran langganan (pembayaran disimulasikan di versi ini).
+model Langganan {
+  id             String          @id @default(cuid())
+  tokoId         String
+  paket          Paket
+  jumlah         Int
+  periodeMulai   DateTime
+  periodeSelesai DateTime
+  status         StatusLangganan @default(AKTIF)
+  metode         String          @default("SIMULASI")
+  dibuatPada     DateTime        @default(now())
+
+  toko Toko @relation(fields: [tokoId], references: [id], onDelete: Cascade)
+
+  @@index([tokoId, dibuatPada])
+}

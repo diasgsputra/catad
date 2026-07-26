@@ -1,0 +1,20 @@
+<svg width="560" height="140" viewBox="0 0 280 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(8 11)">
+    <g transform="translate(24 24) scale(1.15) translate(-20.4 -23.9)">
+      <path d="M30.7 13.23A14.5 14.5 0 1 0 30.7 34.77" stroke="#22324A" stroke-width="7" stroke-linecap="round"/>
+      <rect x="24.5" y="16" width="13.5" height="16" rx="2" fill="#FFFFFF"/>
+      <path d="M33 16H36A2 2 0 0 1 38 18V21Z" fill="#22BC8C"/>
+      <g fill="#22324A">
+        <rect x="27.5" y="22" width="5.5" height="1.7" rx="0.85"/>
+        <rect x="27.5" y="25.6" width="8" height="1.7" rx="0.85"/>
+        <rect x="27.5" y="29.2" width="8" height="1.7" rx="0.85"/>
+      </g>
+    </g>
+  </g>
+
+  <text x="58" y="37" font-family="'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif"
+        font-size="30" font-weight="800" letter-spacing="-1" fill="#22324A">Catad</text>
+  <rect x="140.5" y="15.5" width="5" height="5" rx="0.8" fill="#22BC8C"/>
+  <text x="59" y="52" font-family="'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif"
+        font-size="9" font-weight="600" letter-spacing="2.4" fill="#22BC8C">CATATAN DIGITAL</text>
+</svg>

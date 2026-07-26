@@ -1,0 +1,63 @@
+name: catad-claude
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: catad-claude-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-catad}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-catad_rahasia}
+      POSTGRES_DB: ${POSTGRES_DB:-catad}
+      TZ: Asia/Jakarta
+    ports:
+      # 1062 = port Postgres pada rentang alokasi 1061–1070
+      - "1062:5432"
+    volumes:
+      - catad_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-catad} -d ${POSTGRES_DB:-catad}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  migrasi:
+    build:
+      context: .
+      target: migrator
+    container_name: catad-claude-migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-catad}:${POSTGRES_PASSWORD:-catad_rahasia}@db:5432/${POSTGRES_DB:-catad}?schema=public
+      SEED_DEMO: ${SEED_DEMO:-true}
+      TZ: Asia/Jakarta
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      target: runner
+    container_name: catad-claude-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrasi:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-catad}:${POSTGRES_PASSWORD:-catad_rahasia}@db:5432/${POSTGRES_DB:-catad}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-ubah-rahasia-ini-di-produksi-minimal-32-karakter}
+      APP_URL: ${APP_URL:-http://localhost:1061}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      TZ: Asia/Jakarta
+    ports:
+      # 1061 = port aplikasi pada rentang alokasi 1061–1070
+      - "1061:3000"
+
+volumes:
+  catad_pgdata:
+    # Volume baru. Volume lama `catad-claude_catad_pgdata` (sisa build 22 Jul
+    # 2026) sengaja tidak disentuh — hapus manual bila memang tidak diperlukan.
+    name: catad-claude-pgdata

@@ -1,0 +1,17 @@
+node_modules
+.next
+out
+build
+coverage
+
+# Berkas lingkungan tidak pernah masuk repositori: isinya JWT_SECRET dan
+# sandi basis data. Contoh isinya ada di .env.example.
+.env
+.env.*
+!.env.example
+
+.DS_Store
+*.log
+next-env.d.ts
+tsconfig.tsbuildinfo
+.idea/

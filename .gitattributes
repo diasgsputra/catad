@@ -1,0 +1,4 @@
+# Skrip shell wajib berakhiran LF. Kalau ter-checkout dengan CRLF di Windows
+# lalu dikirim ke server, bash Linux akan gagal membacanya.
+*.sh text eol=lf
+*.mjs text eol=lf

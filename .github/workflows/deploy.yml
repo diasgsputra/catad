@@ -1,0 +1,132 @@
+name: Uji & Deploy
+
+on:
+  # Berlaku untuk push langsung maupun merge pull request ke master.
+  push:
+    branches: [master]
+  # Supaya bisa dijalankan ulang manual dari tab Actions tanpa perlu commit.
+  workflow_dispatch:
+
+# Dua deploy tidak boleh berjalan bersamaan ke server yang sama. Antrian
+# dibiarkan menunggu (bukan dibatalkan) agar commit terakhir tetap terpasang.
+concurrency:
+  group: deploy-master
+  cancel-in-progress: false
+
+jobs:
+  uji:
+    name: Uji
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Pasang dependensi
+        run: npm ci
+
+      # Prisma Client harus ada sebelum pemeriksaan tipe, karena tipe hasil
+      # generate dipakai di seluruh berkas server.
+      - name: Siapkan Prisma Client
+        run: npx prisma generate
+
+      - name: Periksa tipe
+        run: npm run lint
+
+      - name: Uji unit
+        run: npm test
+
+  deploy:
+    name: Deploy
+    needs: uji
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Siapkan kunci SSH
+        env:
+          KUNCI: ${{ secrets.SSH_PRIVATE_KEY }}
+          INANG: ${{ secrets.SSH_HOST }}
+          PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          if [ -z "$KUNCI" ] || [ -z "$INANG" ]; then
+            echo "::error::Secret SSH_PRIVATE_KEY / SSH_HOST belum terisi di repositori."
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "$KUNCI" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+
+          # Sidik jari server direkam saat koneksi pertama. Untuk pengamanan
+          # lebih ketat, simpan sidik jarinya sebagai secret lalu tulis
+          # langsung ke known_hosts alih-alih memindainya.
+          ssh-keyscan -p "${PORT:-22}" -H "$INANG" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Periksa prasyarat di server
+        env:
+          INANG: ${{ secrets.SSH_HOST }}
+          PORT: ${{ secrets.SSH_PORT }}
+          AKUN: ${{ secrets.SSH_USER }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "${PORT:-22}" "$AKUN@$INANG" 'bash -s' <<'PERIKSA'
+          kurang=""
+          command -v docker  >/dev/null 2>&1 || kurang="$kurang docker"
+          command -v rsync   >/dev/null 2>&1 || kurang="$kurang rsync"
+          command -v curl    >/dev/null 2>&1 || kurang="$kurang curl"
+          docker compose version >/dev/null 2>&1 || kurang="$kurang docker-compose-plugin"
+
+          if [ -n "$kurang" ]; then
+            echo "Perkakas berikut belum ada di server:$kurang" >&2
+            exit 1
+          fi
+          echo "Prasyarat lengkap: $(docker --version), $(docker compose version)"
+          PERIKSA
+
+      - name: Salin berkas proyek ke server
+        env:
+          INANG: ${{ secrets.SSH_HOST }}
+          PORT: ${{ secrets.SSH_PORT }}
+          AKUN: ${{ secrets.SSH_USER }}
+          TUJUAN: ${{ vars.DEPLOY_PATH || '~/catad' }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "${PORT:-22}" "$AKUN@$INANG" "mkdir -p '$TUJUAN'"
+
+          # --delete membuang berkas yang sudah tidak ada di repositori, tetapi
+          # yang dikecualikan di bawah ini tidak ikut terhapus — termasuk .env
+          # milik server yang menyimpan sandi basis data.
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude '.next' \
+            --exclude 'coverage' \
+            --exclude '.env' \
+            -e "ssh -i ~/.ssh/id_deploy -p ${PORT:-22}" \
+            ./ "$AKUN@$INANG:$TUJUAN/"
+
+      - name: Bangun dan jalankan di server
+        env:
+          INANG: ${{ secrets.SSH_HOST }}
+          PORT: ${{ secrets.SSH_PORT }}
+          AKUN: ${{ secrets.SSH_USER }}
+          TUJUAN: ${{ vars.DEPLOY_PATH || '~/catad' }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "${PORT:-22}" "$AKUN@$INANG" \
+            "chmod +x '$TUJUAN/scripts/deploy-remote.sh' && '$TUJUAN/scripts/deploy-remote.sh'"
+
+      - name: Ringkasan
+        if: success()
+        env:
+          INANG: ${{ secrets.SSH_HOST }}
+        run: |
+          echo "### Deploy berhasil :rocket:" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit \`${GITHUB_SHA::7}\` sudah berjalan di server." >> "$GITHUB_STEP_SUMMARY"
+          echo "Aplikasi mendengarkan di port **1061**, basis data di **1062**." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Bersihkan kunci
+        if: always()
+        run: rm -f ~/.ssh/id_deploy

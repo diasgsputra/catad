@@ -1,0 +1,257 @@
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Catad — bahasa desain "nota & buku catatan"
+   Kertas hangat, tinta gelap, satu warna merek yang dipakai hemat, dan
+   angka bergaya tabular seperti struk. Warna hanya dipakai untuk makna
+   (aman / waspada / bahaya), tidak untuk hiasan.
+   ────────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  /* Permukaan — putih kebiruan agar navy dan tosca lambang duduk bersih. */
+  --color-kertas: #f7f9fb;
+  --color-kertas-2: #eef2f6;
+  --color-putih: #ffffff;
+
+  /* Tinta — navy lambang, dipakai untuk teks dan panel gelap. */
+  --color-tinta: #22324a;
+  --color-tinta-2: #3d4d66;
+  /* 4,9:1 di atas kertas — teks sekunder tetap lolos WCAG AA. */
+  --color-tinta-3: #5f6f87;
+  --color-tinta-4: #8593a8;
+
+  /* Garis */
+  --color-garis: #e2e7ee;
+  --color-garis-2: #ccd4de;
+
+  /* Merek — tosca lambang (#22bc8c) diturunkan gelapnya untuk permukaan yang
+     memuat teks. Tosca aslinya terlalu terang: dengan tulisan putih di atasnya
+     rasio kontrasnya hanya 3,5:1. Nilai di bawah ini 4,7:1, lolos WCAG AA. */
+  --color-merek: #0a8462;
+  --color-merek-tua: #086a4e;
+  --color-merek-muda: #e5f7f1;
+  --color-merek-garis: #a9e2ce;
+
+  /* Semantik */
+  --color-kuning: #a76a06;
+  --color-kuning-muda: #fdf3e0;
+  --color-kuning-garis: #f0d9a8;
+  --color-merah: #a93226;
+  --color-merah-muda: #fceeec;
+  --color-merah-garis: #f0c8c2;
+  --color-biru: #2a5b8c;
+  --color-biru-muda: #eaf1f8;
+  --color-hijau: #1f7a4d;
+  --color-hijau-muda: #e8f4ed;
+
+  /* Tosca murni lambang — dipakai sebagai aksen kecil, bukan warna tombol. */
+  --color-tosca: #22bc8c;
+
+  /* Aksen perhatian: masa uji coba dan sorotan zona papan ketik. Sengaja
+     tetap kuning agar tidak tertukar dengan warna merek. */
+  --color-emas: #f6b93b;
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, "Segoe UI Variable Display",
+    "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+
+  --radius-kartu: 0.75rem;
+
+  --shadow-kartu: 0 1px 2px rgb(23 21 15 / 0.04), 0 1px 3px rgb(23 21 15 / 0.03);
+  --shadow-naik: 0 4px 16px -4px rgb(23 21 15 / 0.12), 0 2px 6px -2px rgb(23 21 15 / 0.06);
+  --shadow-melayang: 0 16px 40px -12px rgb(23 21 15 / 0.22);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-garis);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-kertas);
+    color: var(--color-tinta);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv05" 1, "ss01" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Semua angka rata seperti di struk. */
+  .angka,
+  table td,
+  input[type="number"] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  ::selection {
+    background-color: var(--color-merek-muda);
+    color: var(--color-merek-tua);
+  }
+
+  /* Jejak fokus harus selalu jelas — seluruh aplikasi bisa dipakai tanpa mouse. */
+  :focus-visible {
+    outline: 2px solid var(--color-merek);
+    outline-offset: 2px;
+    border-radius: 0.35rem;
+  }
+
+  /* Di permukaan gelap, hijau merek kurang terbaca; pakai emas. */
+  .bg-tinta :focus-visible {
+    outline-color: var(--color-emas);
+  }
+
+  /* Hilangkan panah pada input angka — kasir memakai keyboard. */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-garis-2);
+    border-radius: 999px;
+    border: 2px solid var(--color-kertas);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-tinta-4);
+  }
+}
+
+@layer components {
+  .kartu {
+    background-color: var(--color-putih);
+    border: 1px solid var(--color-garis);
+    border-radius: var(--radius-kartu);
+    box-shadow: var(--shadow-kartu);
+  }
+
+  /* Garis putus-putus ala potongan struk. */
+  .garis-nota {
+    height: 1px;
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--color-garis-2) 0 6px,
+      transparent 6px 12px
+    );
+  }
+
+  /* Titik-titik penghubung antara keterangan dan angka, seperti di nota. */
+  .baris-nota {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .baris-nota > .isi-titik {
+    flex: 1;
+    border-bottom: 1px dotted var(--color-garis-2);
+    transform: translateY(-0.25rem);
+  }
+
+  /* Tepi bawah bergerigi seperti struk yang disobek.
+     Dua lapis mask: lapis lurus menutupi seluruh badan struk, lapis radial
+     hanya membentuk gerigi di pita paling bawah. Tanpa lapis lurus, bagian
+     di atas pita gerigi ikut hilang karena tidak tertutup mask. */
+  .tepi-sobek {
+    --gigi: 9px;
+    -webkit-mask:
+      radial-gradient(circle var(--gigi) at 50% 0, transparent 98%, #000 100%) bottom left /
+        calc(var(--gigi) * 2) var(--gigi) repeat-x,
+      linear-gradient(#000, #000) top left / 100% calc(100% - var(--gigi)) no-repeat;
+    mask:
+      radial-gradient(circle var(--gigi) at 50% 0, transparent 98%, #000 100%) bottom left /
+        calc(var(--gigi) * 2) var(--gigi) repeat-x,
+      linear-gradient(#000, #000) top left / 100% calc(100% - var(--gigi)) no-repeat;
+  }
+
+  /* Baris daftar yang sedang disorot lewat papan ketik. */
+  tr[data-sorot="true"] {
+    background-color: var(--color-merek-muda);
+    box-shadow: inset 3px 0 0 var(--color-merek);
+  }
+  tr[data-sorot="true"] td {
+    color: var(--color-tinta);
+  }
+
+  .kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.35rem;
+    padding: 0.1rem 0.3rem;
+    border: 1px solid var(--color-garis-2);
+    border-bottom-width: 2px;
+    border-radius: 0.3rem;
+    background-color: var(--color-kertas);
+    color: var(--color-tinta-3);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    font-family: var(--font-mono);
+  }
+
+  /* Latar bertekstur halus untuk halaman pemasaran. */
+  .kertas-bertitik {
+    background-image: radial-gradient(var(--color-garis-2) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: -1px -1px;
+  }
+}
+
+@layer utilities {
+  .animasi-masuk {
+    animation: masuk 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .animasi-naik {
+    animation: naik 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes masuk {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes naik {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animasi-masuk,
+    .animasi-naik {
+      animation: none;
+    }
+  }
+}
+
+@media print {
+  .tanpa-cetak {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}
