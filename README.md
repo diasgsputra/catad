@@ -61,8 +61,12 @@ baru dikirim ke server.
    membangun ulang image dan menyalakan `docker compose`.
 
 Secret yang dibutuhkan di repositori: `SSH_HOST`, `SSH_PORT`, `SSH_USER`, dan
-`SSH_PRIVATE_KEY`. Direktori tujuan bawaannya `catad` (relatif terhadap
-direktori login) dan bisa diubah lewat variabel repositori `DEPLOY_PATH`.
+`SSH_PRIVATE_KEY`. Direktori tujuan bawaannya `/home/ubuntu/projects/catad`
+dan bisa diubah lewat variabel repositori `DEPLOY_PATH`.
+
+Port mengikuti rentang alokasi Catad **1061–1070**: aplikasi di `PORT_APP`
+(1061) dan Postgres di `PORT_DB` (1062). Keduanya dibaca dari `.env`, jadi
+bisa digeser tanpa menyunting `docker-compose.yml`.
 
 Server perlu punya `docker` (dengan plugin `docker compose`, bukan
 `docker-compose` gaya lama), `rsync`, dan `curl`. Ketiganya diperiksa dulu di
@@ -74,6 +78,11 @@ menimpanya — kalau sandi basis data berubah, volume Postgres yang sudah berisi
 data akan menolak koneksi. Berkas itu juga dikecualikan dari `rsync --delete`,
 jadi aman disunting langsung di server. Isian bawaannya `SEED_DEMO=false`
 supaya akun demo berkata sandi umum tidak ikut terpasang di server.
+
+Kalau direktori proyek dipindah, skrip deploy membawa `.env` dari lokasi lama.
+Bila `.env` tidak ketemu padahal volume basis datanya sudah ada, deploy
+sengaja berhenti dan menjelaskan pilihannya — lebih baik gagal terang-terangan
+daripada membuat sandi baru yang mengunci data lama.
 
 Deploy tidak pernah berjalan dua kali bersamaan; kalau ada push beruntun,
 yang berikutnya mengantre sampai yang sebelumnya selesai.
