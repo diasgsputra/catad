@@ -95,21 +95,28 @@ async function ujiHttp() {
     periksa(`${jalur} bisa dibuka`, r.status === 200, `status ${r.status}`);
   }
 
-  // Kartu "coba akun demo" tidak boleh memajang kredensial yang tidak ada.
-  // Pemasangan dengan SEED_DEMO=false sengaja tidak punya akun demo.
+  // Tombol "coba pakai toko contoh" harus ada, dan teksnya menyesuaikan
+  // apakah data demo sudah tersedia atau baru akan disiapkan.
   const halamanMasuk = await (await ambil("/masuk")).text();
-  const demoAda = (await db.pengguna.findUnique({
-    where: { email: "demo@catad.id" },
-    select: { id: true },
-  })) !== null;
-  const kartuTampil = halamanMasuk.includes("demo@catad.id");
+  const demoAda =
+    (await db.pengguna.findUnique({
+      where: { email: "demo@catad.id" },
+      select: { id: true },
+    })) !== null;
+
+  periksa(
+    "halaman masuk menyediakan tombol toko contoh",
+    halamanMasuk.includes("Coba pakai toko contoh"),
+  );
 
   periksa(
     demoAda
-      ? "kartu akun demo tampil karena akunnya memang ada"
-      : "kartu akun demo disembunyikan karena akunnya tidak ada",
-    kartuTampil === demoAda,
-    `akun demo ada: ${demoAda}, kartu tampil: ${kartuTampil}`,
+      ? "tombol menyebut toko contoh sudah siap"
+      : "tombol menawarkan menyiapkan toko contoh lebih dulu",
+    demoAda
+      ? halamanMasuk.includes("Toko contoh sudah siap")
+      : halamanMasuk.includes("akan menyiapkan toko contoh"),
+    `data demo ada: ${demoAda}`,
   );
 
   // 6. Nota digital publik

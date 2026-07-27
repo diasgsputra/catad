@@ -2,40 +2,25 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { BingkaiAuth } from "@/components/bingkai-auth";
-import { EMAIL_DEMO } from "@/lib/akun-demo";
+import { dataDemoAda } from "@/lib/data-demo";
+import { demoDiizinkan } from "@/actions/demo";
 import { KartuDemo } from "./kartu-demo";
 import { FormMasuk } from "./form-masuk";
 
 export const metadata: Metadata = { title: "Masuk" };
 export const dynamic = "force-dynamic";
 
-/**
- * Kartu "coba akun demo" hanya boleh muncul kalau akunnya memang ada.
- *
- * Pemasangan di server berjalan dengan SEED_DEMO=false, sehingga akun demo
- * tidak pernah dibuat. Tanpa pemeriksaan ini, halaman masuk memajang kredensial
- * yang dijamin gagal — persis pengalaman yang membingungkan.
- */
-async function adaAkunDemo(): Promise<boolean> {
-  try {
-    const demo = await db.pengguna.findUnique({
-      where: { email: EMAIL_DEMO },
-      select: { id: true },
-    });
-    return demo !== null;
-  } catch {
-    // Basis data belum siap: lebih baik sembunyikan kartunya daripada
-    // menggagalkan seluruh halaman masuk.
-    return false;
-  }
-}
-
 export default async function HalamanMasuk({
   searchParams,
 }: {
   searchParams: Promise<{ lanjut?: string; email?: string }>;
 }) {
-  const [sp, tampilkanDemo] = await Promise.all([searchParams, adaAkunDemo()]);
+  const [sp, boleh] = await Promise.all([searchParams, demoDiizinkan()]);
+
+  // Teks tombol menyesuaikan: menyiapkan data dulu, atau langsung membuka
+  // toko contoh yang sudah ada. Kalau basis data belum siap, anggap belum ada
+  // — tombolnya tetap berguna karena memang akan membuatkan datanya.
+  const sudahAda = boleh ? await dataDemoAda(db).catch(() => false) : false;
 
   return (
     <BingkaiAuth
@@ -51,7 +36,7 @@ export default async function HalamanMasuk({
       }
     >
       <FormMasuk lanjut={sp.lanjut} emailAwal={sp.email} />
-      {tampilkanDemo && <KartuDemo />}
+      {boleh && <KartuDemo sudahAda={sudahAda} />}
     </BingkaiAuth>
   );
 }

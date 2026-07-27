@@ -25,10 +25,13 @@ RUN npx prisma generate && npm run build
 FROM base AS migrator
 ENV NODE_ENV=development
 COPY --from=deps /app/node_modules ./node_modules
-COPY package.json ./
+COPY package.json tsconfig.json ./
 COPY prisma ./prisma
+# Pengisi data demo memakai src/lib/data-demo.ts, implementasi yang sama
+# dengan tombol "coba akun demo" di aplikasi.
+COPY src ./src
 RUN npx prisma generate
-CMD ["sh", "-c", "npx prisma migrate deploy && node prisma/seed.mjs"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx prisma/seed.ts"]
 
 # ── Runner: image tipis berbasis output standalone ──
 FROM base AS runner
