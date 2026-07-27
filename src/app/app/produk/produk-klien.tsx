@@ -329,7 +329,7 @@ export function ProdukKlien({
             judul={produk.length === 0 ? "Belum ada barang" : "Tidak ada yang cocok"}
             pesan={
               produk.length === 0
-                ? "Tambahkan barang jualanmu supaya bisa mulai mencatat penjualan."
+                ? "Tambahkan barang dagangan agar penjualan dapat mulai dicatat."
                 : "Coba ubah kata pencarian atau saringan kategori."
             }
             aksi={
@@ -550,7 +550,7 @@ function FormProduk({
       onTutup={onTutup}
       judul={produk ? "Ubah barang" : "Tambah barang"}
       keterangan={
-        produk ? undefined : "Isi harga modal supaya Catad bisa menghitung untungmu."
+        produk ? undefined : "Isi harga modal agar Catad dapat menghitung laba Anda."
       }
       lebar="sedang"
     >

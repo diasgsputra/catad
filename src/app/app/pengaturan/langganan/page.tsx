@@ -64,7 +64,7 @@ export default async function HalamanLangganan() {
         Langganan
       </h1>
       <p className="mt-1 text-[13px] text-tinta-3">
-        Paket menentukan fitur analisis yang terbuka. Data tokomu tidak pernah dihapus saat paket
+        Paket menentukan fitur analisis yang terbuka. Data toko tidak pernah dihapus saat paket
         berubah.
       </p>
 
@@ -133,7 +133,7 @@ export default async function HalamanLangganan() {
             ) : null
           ) : (
             <div className="rounded-lg bg-kertas-2 py-2.5 text-center text-[13px] font-bold text-tinta-3">
-              Paket kamu sekarang
+              Paket Anda saat ini
             </div>
           )}
         </Kartu>

@@ -133,7 +133,7 @@ export function AksiPengguna({
   const [proses, mulai] = useTransition();
 
   if (diriSendiri) {
-    return <span className="text-[12px] text-tinta-4">akun kamu</span>;
+    return <span className="text-[12px] text-tinta-4">akun Anda</span>;
   }
 
   function alih() {

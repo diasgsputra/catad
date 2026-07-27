@@ -151,7 +151,7 @@ export default async function HalamanRingkasan({
 
       {k.paket.ujiCobaHabis && k.paket.aktif === "GRATIS" && (
         <Peringatan nada="waspada" className="mt-4" judul="Masa uji coba Pro sudah berakhir">
-          Semua data kamu tetap aman. Berlangganan {rupiah(HARGA_PRO_BULANAN)}/bulan untuk
+          Seluruh data Anda tetap aman. Berlangganan {rupiah(HARGA_PRO_BULANAN)}/bulan untuk
           mengaktifkan kembali Catad Insight dan laporan tanpa batas.{" "}
           <Link href="/app/pengaturan/langganan" className="font-bold underline">
             Lihat paket

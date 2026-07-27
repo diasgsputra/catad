@@ -76,12 +76,12 @@ function Hero() {
           </span>
 
           <h1 className="mt-5 text-[38px] leading-[1.08] font-extrabold tracking-[-0.035em] text-tinta sm:text-[52px]">
-            Catat sekali.
+            Aplikasi kasir
             <br />
-            Sisanya Catad
+            dan pembukuan
             <br />
             <span className="relative inline-block">
-              yang urus.
+              untuk usaha kecil.
               <svg
                 className="absolute -bottom-1.5 left-0 w-full"
                 height="10"
@@ -101,25 +101,26 @@ function Hero() {
           </h1>
 
           <p className="mt-6 max-w-lg text-[16.5px] leading-relaxed text-tinta-2">
-            Aplikasi kasir untuk warung, kedai, dan toko kecil. Setiap penjualan langsung
-            tercatat, laporan laba tersusun sendiri, dan barang yang mau habis diingatkan
-            <strong className="font-bold text-tinta"> sebelum benar-benar kehabisan</strong>.
+            Catad mencatat setiap penjualan, menghitung laba, dan
+            <strong className="font-bold text-tinta"> memberi tahu barang yang akan habis</strong>{" "}
+            sebelum stoknya benar-benar kosong. Dibuat untuk warung, toko kelontong, kedai, dan
+            usaha sejenis.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <TautanTombol href="/daftar" ukuran="besar" ikonKanan="kanan">
-              Mulai gratis sekarang
+              Coba gratis {HARI_UJI_COBA} hari
             </TautanTombol>
             <TautanTombol href="/masuk" varian="kedua" ukuran="besar">
-              Lihat demo
+              Lihat toko contoh
             </TautanTombol>
           </div>
 
           <dl className="mt-10 flex flex-wrap gap-x-8 gap-y-4 border-t border-garis pt-6">
             {[
-              ["Buka kasir", "< 10 detik"],
-              ["Laporan harian", "Otomatis"],
-              ["Perangkat", "HP & laptop"],
+              ["Waktu satu transaksi", "Di bawah 10 detik"],
+              ["Laporan harian", "Tersusun otomatis"],
+              ["Perangkat", "HP dan laptop"],
             ].map(([k, v]) => (
               <div key={k}>
                 <dt className="text-[11px] font-bold uppercase tracking-[0.07em] text-tinta-4">{k}</dt>
@@ -156,13 +157,13 @@ function PratinjauProduk() {
             nada="bahaya"
             ikon="stok-kosong"
             judul="Gula Pasir 1kg habis"
-            pesan="Biasanya laku 4/hari. Perkiraan laba yang lewat Rp12.000 per hari."
+            pesan="Biasanya terjual 4 kg per hari. Perkiraan laba yang tidak terambil Rp12.000 per hari."
           />
           <BarisInsight
             nada="waspada"
             ikon="stok"
             judul="3 barang habis dalam 3 hari"
-            pesan="Paling cepat Minyak Goreng 1L: sisa 6 pcs, cukup 2 hari lagi."
+            pesan="Paling cepat Minyak Goreng 1L: sisa 6 pcs, cukup untuk 2 hari lagi."
           />
           <BarisInsight
             nada="baik"
@@ -265,7 +266,7 @@ function UntukSiapa() {
     <section className="border-b border-garis bg-white py-8">
       <div className="mx-auto max-w-6xl px-5">
         <p className="text-center text-[11px] font-bold uppercase tracking-[0.14em] text-tinta-4">
-          Dirancang untuk usaha kecil sehari-hari
+          Cocok untuk berbagai jenis usaha kecil
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-2">
           {jenis.map((j) => (
@@ -288,27 +289,27 @@ function FiturUtama() {
   const fitur: Array<{ ikon: NamaIkon; judul: string; isi: string; poin: string[] }> = [
     {
       ikon: "kasir",
-      judul: "Catat otomatis",
-      isi: "Pilih barang, tekan bayar, selesai. Stok berkurang, laba terhitung, nota tersimpan — semuanya sekali jalan.",
-      poin: ["Hitung kembalian otomatis", "Cari barang dengan keyboard", "Tunai, QRIS, transfer, kartu"],
+      judul: "Pencatatan penjualan",
+      isi: "Pilih barang lalu tekan bayar. Stok berkurang, laba dihitung, dan nota tersimpan dalam satu langkah.",
+      poin: ["Kembalian dihitung otomatis", "Pencarian barang lewat papan ketik", "Tunai, QRIS, transfer, dan kartu"],
     },
     {
       ikon: "grafik",
-      judul: "Laporan jadi sendiri",
-      isi: "Tidak perlu rekap manual di buku atau Excel. Begitu transaksi masuk, laporan harian dan bulanan langsung diperbarui.",
-      poin: ["Untung rugi per hari", "Barang paling laku", "Jam paling ramai"],
+      judul: "Laporan otomatis",
+      isi: "Tidak perlu merekap manual di buku atau Excel. Setiap transaksi langsung memperbarui laporan harian dan bulanan.",
+      poin: ["Laba rugi per hari", "Barang yang paling laku", "Jam paling ramai"],
     },
     {
       ikon: "kotak",
-      judul: "Pengingat stok",
-      isi: "Catad menghitung kecepatan jual tiap barang, lalu memberi tahu berapa hari lagi stoknya habis.",
-      poin: ["Peringatan sebelum kosong", "Riwayat keluar-masuk barang", "Batas minimum per barang"],
+      judul: "Pemantauan stok",
+      isi: "Catad menghitung kecepatan penjualan setiap barang, lalu memperkirakan berapa hari lagi stoknya habis.",
+      poin: ["Peringatan sebelum stok kosong", "Riwayat keluar masuk barang", "Batas minimum per barang"],
     },
     {
       ikon: "toko",
-      judul: "Banyak toko, satu akun",
-      isi: "Setiap toko punya ruang datanya sendiri yang terpisah rapat. Tambahkan akun kasir tanpa memberi akses ke laporan.",
-      poin: ["Data antar toko tidak bercampur", "Peran pemilik & kasir", "Nota digital untuk pembeli"],
+      judul: "Data yang terpisah",
+      isi: "Setiap toko memiliki datanya sendiri dan tidak tercampur dengan toko lain. Akun kasir dapat ditambahkan tanpa memberi akses ke laporan laba.",
+      poin: ["Data antartoko tidak bercampur", "Peran pemilik dan kasir", "Nota digital untuk pembeli"],
     },
   ];
 
@@ -318,10 +319,11 @@ function FiturUtama() {
         <div className="max-w-2xl">
           <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-merek">Fitur utama</p>
           <h2 className="mt-2 text-[30px] leading-tight font-extrabold tracking-[-0.03em] text-tinta sm:text-[36px]">
-            Yang tadinya dikerjakan tiap malam, sekarang tidak dikerjakan sama sekali
+            Pekerjaan pembukuan yang berjalan dengan sendirinya
           </h2>
           <p className="mt-3 text-[15.5px] leading-relaxed text-tinta-2">
-            Catad dibuat untuk pemilik usaha yang waktunya habis di depan, bukan di belakang meja.
+            Pencatatan, perhitungan laba, dan pemantauan stok berlangsung otomatis setiap kali
+            Anda melayani pembeli.
           </p>
         </div>
 
@@ -358,34 +360,34 @@ function SorotInsight() {
         <div className="grid gap-12 lg:grid-cols-[1fr_1.05fr] lg:items-center">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emas">
-              Yang tidak ada di aplikasi kasir lain
+              Fitur unggulan
             </p>
             <h2 className="mt-2 text-[30px] leading-tight font-extrabold tracking-[-0.03em] sm:text-[38px]">
-              Catad Insight: bukan cuma laporan, tapi saran
+              Catad Insight: laporan yang disertai saran
             </h2>
             <p className="mt-4 text-[15.5px] leading-relaxed text-white/70">
-              Aplikasi lain berhenti di angka — kamu sendiri yang harus menyimpulkan. Catad
-              membaca kecepatan jual tiap barang, membandingkannya dengan stok yang ada, lalu
-              memberi tahu apa yang perlu dilakukan hari ini.
+              Laporan biasa hanya menampilkan angka, dan pemilik toko sendiri yang harus
+              menyimpulkannya. Catad Insight membandingkan kecepatan penjualan dengan sisa stok,
+              lalu menyampaikan apa yang sebaiknya dikerjakan hari itu.
             </p>
 
             <ul className="mt-8 space-y-5">
               {[
                 {
-                  judul: "Prediksi barang habis",
-                  isi: "“Minyak goreng cukup 2 hari lagi” — dihitung dari penjualan nyata 14 hari terakhir, bukan sekadar batas minimum.",
+                  judul: "Perkiraan barang habis",
+                  isi: "Misalnya, minyak goreng diperkirakan cukup untuk dua hari lagi. Angkanya dihitung dari penjualan 14 hari terakhir, bukan dari batas minimum yang ditetapkan manual.",
                 },
                 {
                   judul: "Daftar belanja otomatis",
-                  isi: "Catad menyusun sendiri apa yang perlu dikulakan, berapa banyak, dan berapa kira-kira modalnya.",
+                  isi: "Catad menyusun daftar barang yang perlu dibeli, jumlahnya, dan perkiraan modal yang dibutuhkan.",
                 },
                 {
-                  judul: "Modal yang tertidur",
-                  isi: "Barang yang tidak laku 14 hari ditandai lengkap dengan nilai modal yang tertahan di rak.",
+                  judul: "Barang yang tidak bergerak",
+                  isi: "Barang yang tidak terjual selama 14 hari ditandai, beserta nilai modal yang tertahan di dalamnya.",
                 },
                 {
-                  judul: "Ringkasan bahasa manusia",
-                  isi: "Bukan tabel penuh angka, tapi kalimat: apa yang naik, apa yang turun, dan apa sebabnya.",
+                  judul: "Ringkasan harian",
+                  isi: "Penjelasan singkat mengenai penjualan yang naik atau turun beserta penyebabnya, bukan sekadar tabel angka.",
                 },
               ].map((x) => (
                 <li key={x.judul} className="flex gap-3.5">
@@ -413,10 +415,10 @@ function SorotInsight() {
 
             <div className="mt-4 space-y-px overflow-hidden rounded-xl">
               {[
-                ["Gula Pasir 1kg", "Habis, laku 4/hari", "60 pcs", 780_000, "bahaya"],
-                ["Minyak Goreng 1L", "Cukup 2 hari lagi", "40 pcs", 620_000, "waspada"],
-                ["Beras Pandan 5kg", "Cukup 5 hari lagi", "12 sak", 780_000, "waspada"],
-                ["Telur Ayam", "Cukup 6 hari lagi", "8 kg", 224_000, "waspada"],
+                ["Gula Pasir 1kg", "Habis, terjual 4/hari", "60 pcs", 780_000, "bahaya"],
+                ["Minyak Goreng 1L", "Cukup untuk 2 hari", "40 pcs", 620_000, "waspada"],
+                ["Beras Pandan 5kg", "Cukup untuk 5 hari", "12 sak", 780_000, "waspada"],
+                ["Telur Ayam", "Cukup untuk 6 hari", "8 kg", 224_000, "waspada"],
               ].map(([nama, alasan, qty, harga, nada]) => (
                 <div
                   key={nama as string}
@@ -458,15 +460,15 @@ function CaraKerja() {
   const langkah = [
     {
       judul: "Daftarkan toko",
-      isi: "Isi nama toko dan email. Tidak perlu kartu kredit, tidak perlu pasang aplikasi.",
+      isi: "Isi nama toko dan alamat email. Tidak diperlukan kartu kredit maupun pemasangan aplikasi.",
     },
     {
-      judul: "Masukkan barang jualan",
-      isi: "Cukup nama, harga jual, dan harga modal. Harga modal dipakai Catad untuk menghitung laba.",
+      judul: "Masukkan daftar barang",
+      isi: "Cukup nama, harga jual, dan harga modal. Harga modal digunakan untuk menghitung laba.",
     },
     {
-      judul: "Jualan seperti biasa",
-      isi: "Pakai Catad di kasir. Laporan, stok, dan saran belanja akan mengurus dirinya sendiri.",
+      judul: "Gunakan saat melayani pembeli",
+      isi: "Buka Catad di kasir. Laporan, stok, dan saran pembelian akan diperbarui dengan sendirinya.",
     },
   ];
 
@@ -474,7 +476,7 @@ function CaraKerja() {
     <section id="cara-kerja" className="scroll-mt-20 border-b border-garis py-20">
       <div className="mx-auto max-w-6xl px-5">
         <h2 className="text-center text-[30px] leading-tight font-extrabold tracking-[-0.03em] text-tinta sm:text-[36px]">
-          Siap dipakai dalam satu sore
+          Tiga langkah untuk mulai menggunakan
         </h2>
 
         <ol className="mt-12 grid gap-6 md:grid-cols-3">
@@ -506,11 +508,11 @@ function Harga() {
       <div className="mx-auto max-w-5xl px-5">
         <div className="text-center">
           <h2 className="text-[30px] leading-tight font-extrabold tracking-[-0.03em] text-tinta sm:text-[36px]">
-            Harga yang masuk akal untuk warung
+            Pilihan paket dan harga
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-[15.5px] leading-relaxed text-tinta-2">
-            Mulai gratis selamanya. Semua akun baru otomatis mencoba fitur Pro selama{" "}
-            {HARI_UJI_COBA} hari.
+            Paket Gratis dapat digunakan selamanya. Setiap akun baru mendapat masa coba fitur Pro
+            selama {HARI_UJI_COBA} hari.
           </p>
         </div>
 
@@ -588,23 +590,23 @@ function Tanya() {
   const tanya = [
     {
       t: "Apakah data toko saya bisa dilihat toko lain?",
-      j: "Tidak. Setiap toko punya ruang data sendiri dan setiap permintaan data selalu disaring berdasarkan toko yang sedang masuk. Akun dari toko lain tidak punya jalan untuk membaca data toko kamu.",
+      j: "Tidak. Setiap toko memiliki datanya sendiri, dan setiap permintaan data selalu disaring berdasarkan toko yang sedang masuk. Akun dari toko lain tidak memiliki jalur untuk membaca data toko Anda.",
     },
     {
-      t: "Kalau masa uji coba habis, data saya hilang?",
-      j: `Tidak. Akun otomatis turun ke paket Gratis dan semua data tetap utuh. Kamu hanya kehilangan akses ke fitur Pro seperti Catad Insight sampai berlangganan.`,
+      t: "Jika masa coba berakhir, apakah data saya hilang?",
+      j: "Tidak. Akun akan turun ke paket Gratis dan seluruh data tetap utuh. Yang tidak bisa diakses hanya fitur Pro seperti Catad Insight, sampai Anda berlangganan.",
     },
     {
-      t: "Harus pasang aplikasi di HP?",
-      j: "Tidak perlu. Catad berjalan di peramban, jadi bisa dibuka dari HP, tablet, maupun laptop. Tampilan kasirnya sudah disesuaikan untuk layar kecil.",
+      t: "Apakah perlu memasang aplikasi di HP?",
+      j: "Tidak perlu. Catad berjalan di peramban, sehingga dapat dibuka dari HP, tablet, maupun laptop. Tampilan kasirnya sudah disesuaikan untuk layar kecil.",
     },
     {
-      t: "Bagaimana kalau saya punya lebih dari satu toko?",
-      j: "Buat satu akun untuk tiap toko. Datanya terpisah penuh, termasuk barang, laporan, dan akun kasirnya.",
+      t: "Bagaimana jika saya memiliki lebih dari satu toko?",
+      j: "Buat satu akun untuk setiap toko. Datanya terpisah sepenuhnya, termasuk daftar barang, laporan, dan akun kasirnya.",
     },
     {
       t: "Apakah harga modal wajib diisi?",
-      j: "Tidak wajib, tapi sangat disarankan. Tanpa harga modal, Catad hanya bisa menghitung omzet — bukan laba, dan daftar belanja tidak bisa memperkirakan biaya kulakan.",
+      j: "Tidak wajib, tetapi sangat disarankan. Tanpa harga modal, Catad hanya dapat menghitung omzet dan bukan laba, serta daftar belanja tidak dapat memperkirakan biaya pembelian barang.",
     },
   ];
 
@@ -612,7 +614,7 @@ function Tanya() {
     <section className="border-b border-garis py-20">
       <div className="mx-auto max-w-3xl px-5">
         <h2 className="text-[30px] leading-tight font-extrabold tracking-[-0.03em] text-tinta sm:text-[34px]">
-          Pertanyaan yang sering masuk
+          Pertanyaan yang sering diajukan
         </h2>
 
         <div className="mt-8 divide-y divide-garis border-y border-garis">
@@ -632,13 +634,14 @@ function Tanya() {
         <div className="mt-12 flex flex-col items-center gap-4 rounded-2xl border border-merek-garis bg-merek-muda px-6 py-10 text-center">
           <LogoMark size={44} />
           <h3 className="text-[22px] font-extrabold tracking-[-0.025em] text-merek-tua">
-            Coba dulu, gratis {HARI_UJI_COBA} hari
+            Mulai gratis selama {HARI_UJI_COBA} hari
           </h3>
           <p className="max-w-md text-[14.5px] leading-relaxed text-merek-tua/80">
-            Buat akun dalam satu menit dan lihat sendiri laporan pertama kamu muncul hari ini juga.
+            Pembuatan akun hanya membutuhkan satu menit. Laporan pertama Anda akan tersedia pada
+            hari yang sama.
           </p>
           <TautanTombol href="/daftar" ukuran="besar" ikonKanan="kanan" className="mt-1">
-            Daftarkan toko saya
+            Daftarkan toko
           </TautanTombol>
         </div>
       </div>

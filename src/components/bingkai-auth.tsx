@@ -27,13 +27,13 @@ export function BingkaiAuth({
 
         <div className="relative max-w-sm">
           <p className="text-[26px] leading-[1.2] font-extrabold tracking-[-0.03em]">
-            Warung yang tercatat rapi lebih mudah tumbuh.
+            Pencatatan yang rapi membantu usaha berkembang.
           </p>
           <ul className="mt-8 space-y-4">
             {[
-              ["kasir", "Kasir cepat", "Pilih barang, bayar, nota langsung jadi."],
-              ["grafik", "Laporan otomatis", "Untung rugi terhitung tanpa rekap manual."],
-              ["insight", "Catad Insight", "Tahu barang apa yang harus dibeli besok."],
+              ["kasir", "Kasir", "Pilih barang, terima pembayaran, nota langsung tersedia."],
+              ["grafik", "Laporan otomatis", "Laba rugi terhitung tanpa perlu rekap manual."],
+              ["insight", "Catad Insight", "Mengetahui barang yang perlu dibeli berikutnya."],
             ].map(([ikon, judulK, isi]) => (
               <li key={judulK} className="flex gap-3">
                 <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-emas">

@@ -58,7 +58,7 @@ export function FormDaftar() {
 
       <div className="garis-nota my-5" />
 
-      <Bidang label="Nama kamu" htmlFor="nama" galat={keadaan.galat?.nama} wajib>
+      <Bidang label="Nama Anda" htmlFor="nama" galat={keadaan.galat?.nama} wajib>
         <Kolom
           id="nama"
           name="nama"

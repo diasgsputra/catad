@@ -8,8 +8,8 @@ export const metadata: Metadata = { title: "Daftar" };
 export default function HalamanDaftar() {
   return (
     <BingkaiAuth
-      judul="Daftarkan tokomu"
-      keterangan="Satu menit, langsung bisa dipakai jualan hari ini."
+      judul="Daftarkan toko Anda"
+      keterangan="Pendaftaran hanya membutuhkan satu menit."
       kaki={
         <>
           Sudah punya akun?{" "}

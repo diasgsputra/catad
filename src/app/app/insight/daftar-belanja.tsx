@@ -191,7 +191,7 @@ export function DaftarBelanja({
           </div>
         )}
         <p className="mt-2 text-[11.5px] leading-relaxed text-tinta-4">
-          Perhitungan memakai harga modal terakhir yang kamu catat dan kecepatan jual 14 hari
+          Perhitungan memakai harga modal terakhir yang tercatat dan kecepatan penjualan 14 hari
           terakhir. Harga di pasar bisa berbeda.
         </p>
       </div>

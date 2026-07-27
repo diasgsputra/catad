@@ -15,14 +15,14 @@ export const metadata: Metadata = {
     template: "%s · Catad",
   },
   description:
-    "Aplikasi kasir untuk warung, toko, dan UMKM. Penjualan tercatat otomatis, laporan laba jadi sendiri, dan stok yang mau habis diingatkan lebih awal.",
+    "Aplikasi kasir dan pembukuan untuk warung, toko, dan UMKM. Penjualan tercatat otomatis, laporan laba tersusun sendiri, dan stok yang akan habis diingatkan lebih awal.",
   applicationName: "Catad",
   keywords: ["kasir", "POS", "UMKM", "warung", "pembukuan", "stok", "laporan penjualan"],
   authors: [{ name: "Catad" }],
   openGraph: {
     title: "Catad — Catatan Digital",
     description:
-      "Kasir dan pembukuan otomatis untuk UMKM. Catat sekali, laporan dan pengingat stok jalan sendiri.",
+      "Kasir dan pembukuan otomatis untuk UMKM. Penjualan tercatat, laporan tersusun, dan stok terpantau dengan sendirinya.",
     type: "website",
     locale: "id_ID",
   },

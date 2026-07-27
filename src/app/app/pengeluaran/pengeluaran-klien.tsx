@@ -53,7 +53,7 @@ export function TombolCatat({ tanggalBawaan }: { tanggalBawaan: string }) {
         buka={buka}
         onTutup={() => setBuka(false)}
         judul="Catat pengeluaran"
-        keterangan="Supaya laba bersih tokomu terhitung benar."
+        keterangan="Agar laba bersih toko terhitung dengan benar."
         lebar="kecil"
       >
         <form action={kirim} className="space-y-4">

@@ -145,7 +145,7 @@ export async function tambahPengguna(_sebelum: HasilAksi, data: FormData): Promi
 export async function ubahAktifPengguna(id: string, aktif: boolean): Promise<HasilAksi> {
   const k = await konteks();
   if (k.sesi.peran !== "PEMILIK") return { pesan: "Hanya pemilik yang bisa mengubah akun." };
-  if (id === k.sesi.uid) return { pesan: "Kamu tidak bisa menonaktifkan akunmu sendiri." };
+  if (id === k.sesi.uid) return { pesan: "Akun sendiri tidak dapat dinonaktifkan." };
 
   const hasil = await db.pengguna.updateMany({
     where: { id, tokoId: k.toko.id },
@@ -160,7 +160,7 @@ export async function ubahAktifPengguna(id: string, aktif: boolean): Promise<Has
 export async function hapusPengguna(id: string): Promise<HasilAksi> {
   const k = await konteks();
   if (k.sesi.peran !== "PEMILIK") return { pesan: "Hanya pemilik yang bisa menghapus akun." };
-  if (id === k.sesi.uid) return { pesan: "Kamu tidak bisa menghapus akunmu sendiri." };
+  if (id === k.sesi.uid) return { pesan: "Akun sendiri tidak dapat dihapus." };
 
   const target = await db.pengguna.findFirst({
     where: { id, tokoId: k.toko.id },

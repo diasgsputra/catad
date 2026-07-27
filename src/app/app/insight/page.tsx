@@ -106,7 +106,7 @@ export default async function HalamanInsight() {
         <KepalaKartu
           ikon="insight"
           judul="Ringkasan hari ini"
-          keterangan="Disusun otomatis dari data tokomu, bukan tebakan"
+          keterangan="Disusun otomatis dari data toko, bukan perkiraan kasar"
         />
         <ul className="divide-y divide-garis">
           {briefing.map((s) => (
@@ -353,7 +353,7 @@ function TerkunciPro({ perluTindakan }: { perluTindakan: number }) {
               </>
             ) : (
               <>
-                Aktifkan Pro untuk mengubah data penjualanmu menjadi saran yang bisa langsung
+                Aktifkan Pro untuk mengubah data penjualan Anda menjadi saran yang dapat langsung
                 dikerjakan.
               </>
             )}

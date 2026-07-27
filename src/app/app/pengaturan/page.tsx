@@ -25,12 +25,12 @@ export default async function HalamanPengaturan() {
     <div className="p-4 sm:p-6">
       <JudulHalaman
         judul="Pengaturan"
-        keterangan="Identitas toko, nota, dan keamanan akunmu."
+        keterangan="Identitas toko, nota, dan keamanan akun Anda."
       />
 
       {!bolehUbah && (
         <Peringatan nada="info" className="mt-4">
-          Kamu masuk sebagai kasir, jadi pengaturan toko hanya bisa dilihat.
+          Anda masuk sebagai kasir, sehingga pengaturan toko hanya dapat dilihat.
         </Peringatan>
       )}
 

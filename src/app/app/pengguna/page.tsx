@@ -44,7 +44,7 @@ export default async function HalamanPengguna() {
     <div className="p-4 sm:p-6">
       <JudulHalaman
         judul="Akun kasir"
-        keterangan="Beri akses kasir tanpa membuka laporan laba tokomu."
+        keterangan="Beri akses kasir tanpa membuka laporan laba toko."
         aksi={<TombolTambahPengguna kuotaHabis={kuotaHabis} />}
       />
 

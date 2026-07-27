@@ -49,11 +49,11 @@ export function KartuDemo({ sudahAda }: { sudahAda: boolean }) {
           <Ikon nama="toko" size={15} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[13.5px] font-bold text-tinta">Mau lihat-lihat dulu?</p>
+          <p className="text-[13.5px] font-bold text-tinta">Ingin mencoba terlebih dahulu?</p>
           <p className="mt-0.5 text-[12.5px] leading-relaxed text-tinta-3">
             {sudahAda
               ? "Toko contoh sudah siap: 24 barang dan 21 hari transaksi, lengkap dengan laporan dan Catad Insight."
-              : "Catad akan menyiapkan toko contoh berisi 24 barang dan 21 hari transaksi, lalu langsung membukanya untukmu."}
+              : "Catad akan menyiapkan toko contoh berisi 24 barang dan 21 hari transaksi, lalu langsung membukanya untuk Anda."}
           </p>
         </div>
       </div>

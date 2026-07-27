@@ -408,8 +408,8 @@ export function briefingHarian(m: MasukanBriefing): Insight[] {
       id: "stok-kosong",
       nada: "bahaya",
       ikon: "stok-kosong",
-      judul: `${kosongTapiLaku.length} barang laku sedang kosong`,
-      pesan: `${gabungNama(contoh, kosongTapiLaku.length)} habis padahal biasanya terjual tiap hari. Perkiraan laba yang lewat ${rp(potensiHilang)} per hari.`,
+      judul: `${kosongTapiLaku.length} barang laris sedang kosong`,
+      pesan: `${gabungNama(contoh, kosongTapiLaku.length)} habis padahal biasanya terjual setiap hari. Perkiraan laba yang tidak terambil ${rp(potensiHilang)} per hari.`,
       aksi: { label: "Buat daftar belanja", href: "/app/insight#belanja" },
       prioritas: 100,
     });
@@ -456,7 +456,7 @@ export function briefingHarian(m: MasukanBriefing): Insight[] {
       nada: "netral",
       ikon: "jam",
       judul: `Jam paling ramai ${jam2(sibuk.mulai)}–${jam2(sibuk.selesai + 1)}`,
-      pesan: `Sekitar ${rp(sibuk.pendapatan)} penjualan 30 hari terakhir terjadi di rentang ini. Pastikan stok dan tenaga siap sebelum ${jam2(sibuk.mulai)}.`,
+      pesan: `Sekitar ${rp(sibuk.pendapatan)} penjualan 30 hari terakhir terjadi di rentang ini. Pastikan stok dan tenaga sudah siap sebelum ${jam2(sibuk.mulai)}.`,
       prioritas: 40,
     });
   }
@@ -468,8 +468,8 @@ export function briefingHarian(m: MasukanBriefing): Insight[] {
       id: "terlaris",
       nada: "positif",
       ikon: "bintang",
-      judul: `${j.nama} jadi andalan minggu ini`,
-      pesan: `Terjual ${j.qty} unit dan menyumbang ${rp(j.pendapatan)}. Jaga stoknya jangan sampai kosong.`,
+      judul: `${j.nama} menjadi barang terlaris minggu ini`,
+      pesan: `Terjual ${j.qty} unit dan menyumbang ${rp(j.pendapatan)}. Pastikan stoknya tidak sampai kosong.`,
       prioritas: 45,
     });
   }
@@ -483,7 +483,7 @@ export function briefingHarian(m: MasukanBriefing): Insight[] {
         nada: "peringatan",
         ikon: "turun",
         judul: `Margin laba turun ${Math.round(turun)} poin`,
-        pesan: `Minggu ini margin ${Math.round(m.margin7)}%, sebelumnya ${Math.round(m.marginSebelumnya)}%. Cek harga modal yang naik atau diskon yang terlalu sering.`,
+        pesan: `Minggu ini margin ${Math.round(m.margin7)}%, sebelumnya ${Math.round(m.marginSebelumnya)}%. Periksa harga modal yang naik atau pemberian diskon yang terlalu sering.`,
         aksi: { label: "Lihat laporan laba", href: "/app/laporan" },
         prioritas: 80,
       });
@@ -493,7 +493,7 @@ export function briefingHarian(m: MasukanBriefing): Insight[] {
         nada: "positif",
         ikon: "naik",
         judul: `Margin laba naik ke ${Math.round(m.margin7)}%`,
-        pesan: `Sebelumnya ${Math.round(m.marginSebelumnya)}%. Komposisi barang yang dijual makin menguntungkan.`,
+        pesan: `Sebelumnya ${Math.round(m.marginSebelumnya)}%. Komposisi barang yang terjual semakin menguntungkan.`,
         prioritas: 35,
       });
     }
@@ -507,8 +507,8 @@ export function briefingHarian(m: MasukanBriefing): Insight[] {
         id: "stok-mati",
         nada: "peringatan",
         ikon: "stok-mati",
-        judul: `${rp(totalModal)} modal nganggur di ${m.stokMati.length} barang`,
-        pesan: `${gabungNama(m.stokMati.slice(0, 3).map((s) => s.produk.nama), m.stokMati.length)} tidak terjual sama sekali dalam 14 hari terakhir. Pertimbangkan diskon atau bundling.`,
+        judul: `${rp(totalModal)} modal tertahan di ${m.stokMati.length} barang`,
+        pesan: `${gabungNama(m.stokMati.slice(0, 3).map((s) => s.produk.nama), m.stokMati.length)} tidak terjual sama sekali dalam 14 hari terakhir. Pertimbangkan pemberian diskon atau penjualan paket.`,
         aksi: { label: "Lihat barang mandek", href: "/app/insight#mandek" },
         prioritas: 65,
       });
@@ -527,7 +527,7 @@ export function briefingHarian(m: MasukanBriefing): Insight[] {
           rasio >= 100
             ? "Pengeluaran bulan ini melebihi pendapatan"
             : `Pengeluaran sudah ${rasio}% dari pendapatan`,
-        pesan: `Masuk ${rp(m.pendapatanBulanIni)}, keluar ${rp(m.pengeluaranBulanIni)} bulan ini. ${rasio >= 100 ? "Tahan dulu belanja yang bisa ditunda." : "Perhatikan pos pengeluaran terbesar."}`,
+        pesan: `Masuk ${rp(m.pendapatanBulanIni)}, keluar ${rp(m.pengeluaranBulanIni)} bulan ini. ${rasio >= 100 ? "Tunda pembelian yang belum mendesak." : "Perhatikan pos pengeluaran terbesar."}`,
         aksi: { label: "Lihat pengeluaran", href: "/app/pengeluaran" },
         prioritas: rasio >= 100 ? 95 : 55,
       });
@@ -543,7 +543,7 @@ export function briefingHarian(m: MasukanBriefing): Insight[] {
         nada: beda > 0 ? "positif" : "netral",
         ikon: "keranjang",
         judul: `Belanja per pembeli ${beda > 0 ? "naik" : "turun"} ${Math.abs(beda)}%`,
-        pesan: `Rata-rata ${rp(m.rataKeranjang)} per transaksi minggu ini, sebelumnya ${rp(m.rataKeranjangSebelumnya)}.${beda < 0 ? " Coba tawarkan barang pelengkap saat di kasir." : ""}`,
+        pesan: `Rata-rata ${rp(m.rataKeranjang)} per transaksi minggu ini, sebelumnya ${rp(m.rataKeranjangSebelumnya)}.${beda < 0 ? " Tawarkan barang pelengkap saat pembeli di kasir." : ""}`,
         prioritas: 30,
       });
     }
@@ -556,7 +556,7 @@ export function briefingHarian(m: MasukanBriefing): Insight[] {
       nada: "netral",
       ikon: "kalender",
       judul: `${m.hariTerbaik.nama} biasanya hari terbaik`,
-      pesan: `Rata-rata ${rp(m.hariTerbaik.rata)} per ${m.hariTerbaik.nama}. Siapkan stok lebih sebelum hari itu.`,
+      pesan: `Rata-rata ${rp(m.hariTerbaik.rata)} per ${m.hariTerbaik.nama}. Siapkan stok lebih banyak sebelum hari tersebut.`,
       prioritas: 25,
     });
   }
@@ -567,11 +567,11 @@ export function briefingHarian(m: MasukanBriefing): Insight[] {
       id: "aman",
       nada: "positif",
       ikon: "centang",
-      judul: "Semua terkendali",
+      judul: "Tidak ada yang mendesak",
       pesan:
         ringkas.total === 0
-          ? "Belum ada produk yang dicatat. Tambahkan barang dulu supaya Catad bisa memantau stok dan penjualan."
-          : `${ringkas.total} produk terpantau, tidak ada yang mendesak hari ini. Catad akan memberi tahu begitu ada yang perlu dibelanjakan.`,
+          ? "Belum ada barang yang tercatat. Tambahkan barang terlebih dahulu agar Catad dapat memantau stok dan penjualan."
+          : `${ringkas.total} produk terpantau, tidak ada yang mendesak hari ini. Catad akan memberi tahu begitu ada barang yang perlu dibeli.`,
       aksi:
         ringkas.total === 0 ? { label: "Tambah produk", href: "/app/produk" } : undefined,
       prioritas: 10,

@@ -69,7 +69,7 @@ export default async function HalamanProduk() {
     <div className="p-4 sm:p-6">
       <JudulHalaman
         judul="Daftar barang"
-        keterangan="Semua barang yang dijual di tokomu, lengkap dengan harga modal dan stok."
+        keterangan="Seluruh barang yang dijual di toko Anda, lengkap dengan harga modal dan stok."
       />
 
       <div className="mt-5">

@@ -25,7 +25,7 @@ export default async function HalamanMasuk({
   return (
     <BingkaiAuth
       judul="Masuk ke Catad"
-      keterangan="Lanjutkan mencatat penjualan tokomu."
+      keterangan="Lanjutkan mencatat penjualan toko Anda."
       kaki={
         <>
           Belum punya akun?{" "}

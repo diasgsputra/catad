@@ -94,7 +94,7 @@ export default async function HalamanPengeluaran() {
     <div className="p-4 sm:p-6">
       <JudulHalaman
         judul="Pengeluaran"
-        keterangan="Catat biaya operasional supaya laba bersih tokomu terlihat jujur."
+        keterangan="Catat biaya operasional agar laba bersih toko terhitung sebagaimana mestinya."
         aksi={<TombolCatat tanggalBawaan={nilaiInputTanggal(sekarang)} />}
       />
 
