@@ -1,9 +1,7 @@
 "use client";
 
 import { Ikon } from "@/components/ikon";
-
-const EMAIL_DEMO = "demo@catad.id";
-const SANDI_DEMO = "catad123";
+import { EMAIL_DEMO, SANDI_DEMO } from "@/lib/akun-demo";
 
 /** Pintasan agar akun demo bisa dicoba tanpa mengetik ulang. */
 export function KartuDemo() {

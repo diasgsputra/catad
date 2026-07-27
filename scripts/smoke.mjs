@@ -95,6 +95,23 @@ async function ujiHttp() {
     periksa(`${jalur} bisa dibuka`, r.status === 200, `status ${r.status}`);
   }
 
+  // Kartu "coba akun demo" tidak boleh memajang kredensial yang tidak ada.
+  // Pemasangan dengan SEED_DEMO=false sengaja tidak punya akun demo.
+  const halamanMasuk = await (await ambil("/masuk")).text();
+  const demoAda = (await db.pengguna.findUnique({
+    where: { email: "demo@catad.id" },
+    select: { id: true },
+  })) !== null;
+  const kartuTampil = halamanMasuk.includes("demo@catad.id");
+
+  periksa(
+    demoAda
+      ? "kartu akun demo tampil karena akunnya memang ada"
+      : "kartu akun demo disembunyikan karena akunnya tidak ada",
+    kartuTampil === demoAda,
+    `akun demo ada: ${demoAda}, kartu tampil: ${kartuTampil}`,
+  );
+
   // 6. Nota digital publik
   const contohNota = await db.transaksi.findFirst({
     where: { status: "SELESAI" },
