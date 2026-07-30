@@ -213,6 +213,7 @@ export default async function HalamanLangganan() {
               hargaTahunan={HARGA_PRO_TAHUNAN}
               sedangPro={sedangPro}
               tujuan={tujuan}
+              adaPengajuan={!!pengajuan}
             />
           </div>
         </Kartu>

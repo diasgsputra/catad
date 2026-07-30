@@ -4,7 +4,7 @@ import { useCallback, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Ikon } from "@/components/ikon";
 import { Konfirmasi } from "@/components/modal";
-import { Peringatan } from "@/components/ui";
+import { Peringatan, Tombol } from "@/components/ui";
 import { ajukanLangganan, batalkanPengajuan, hentikanPro } from "@/actions/toko";
 import { rupiah } from "@/lib/format";
 import {
@@ -73,17 +73,34 @@ export function PanelBerlangganan({
   hargaTahunan,
   sedangPro,
   tujuan,
+  adaPengajuan,
 }: {
   namaToko: string;
   hargaBulanan: number;
   hargaTahunan: number;
   sedangPro: boolean;
   tujuan: TujuanPembayaran;
+  /** Pemilik toko sudah pernah menyatakan niat dan belum dibatalkan. */
+  adaPengajuan: boolean;
 }) {
   const router = useRouter();
   const [siklus, setSiklus] = useState<Siklus>("BULANAN");
   const [kabar, setKabar] = useState<string | null>(null);
-  const [, mulai] = useTransition();
+  const [proses, mulai] = useTransition();
+
+  /**
+   * Petunjuk transfer hanya ditampilkan setelah niat dinyatakan.
+   *
+   * Sebelumnya nomor rekening dan tombol WhatsApp muncul begitu halaman
+   * dibuka, dan pengajuannya baru tercatat saat tombol WhatsApp ditekan.
+   * Akibatnya orang yang sekadar menengok harga langsung disuguhi alur
+   * pembayaran seolah sudah setuju. Sekarang ada satu langkah sadar lebih
+   * dulu, dan langkah itulah yang mencatat pengajuannya.
+   *
+   * Yang sudah pernah mengajukan tidak diminta menekan lagi — petunjuknya
+   * langsung terbuka saat halaman dimuat.
+   */
+  const [niatDinyatakan, setNiatDinyatakan] = useState(adaPengajuan);
 
   const jumlah = siklus === "TAHUNAN" ? hargaTahunan : hargaBulanan;
   const siap = pembayaranSiap(tujuan);
@@ -93,15 +110,18 @@ export function PanelBerlangganan({
     pesanKonfirmasi({ namaToko, siklus, jumlah: rupiah(jumlah) }),
   );
 
-  // Pengajuan dicatat sambil jalan. Tautan WhatsApp tetap berupa anchor asli
-  // yang membuka tab baru — kalau menunggu aksi server selesai lalu memanggil
-  // window.open, penghadang pop-up peramban bisa memblokirnya.
-  function catatPengajuan() {
+  function nyatakanNiat() {
     mulai(async () => {
       const hasil = await ajukanLangganan(siklus);
       setKabar(hasil.pesan ?? null);
+      if (hasil.sukses) setNiatDinyatakan(true);
       router.refresh();
     });
+  }
+
+  function gantiPilihan() {
+    setNiatDinyatakan(false);
+    setKabar(null);
   }
 
   const pilihan: Array<{ nilai: Siklus; label: string; harga: number; catatan: string }> = [
@@ -122,11 +142,14 @@ export function PanelBerlangganan({
               type="button"
               onClick={() => setSiklus(p.nilai)}
               aria-pressed={siklus === p.nilai}
+              disabled={niatDinyatakan}
               className={cn(
                 "rounded-xl border-2 p-3 text-left transition-colors",
                 siklus === p.nilai
                   ? "border-merek bg-merek-muda"
                   : "border-garis-2 bg-white hover:border-merek/40",
+                niatDinyatakan && siklus !== p.nilai && "opacity-45",
+                niatDinyatakan && "cursor-default",
               )}
             >
               <span className="text-[12px] font-bold tracking-[0.06em] text-tinta-3 uppercase">
@@ -141,7 +164,29 @@ export function PanelBerlangganan({
         </div>
       </div>
 
-      {!siap ? (
+      {/* Gerbang niat. Petunjuk transfer sengaja belum dimunculkan sampai
+          pemilik toko benar-benar menyatakan mau berlangganan. */}
+      {siap && !niatDinyatakan && (
+        <div>
+          <Tombol
+            ukuran="besar"
+            penuh
+            ikonKanan="kanan"
+            onClick={nyatakanNiat}
+            disabled={proses}
+          >
+            {proses
+              ? "Menyiapkan…"
+              : `${sedangPro ? "Lanjut perpanjang" : "Lanjut berlangganan"} · ${rupiah(jumlah)}`}
+          </Tombol>
+          <p className="mt-2 text-[11.5px] leading-relaxed text-tinta-3">
+            Menekan tombol ini belum menagih apa pun. Nomor rekening dan cara konfirmasinya baru
+            ditampilkan sesudahnya, dan pengajuannya masih bisa dibatalkan.
+          </p>
+        </div>
+      )}
+
+      {!siap && (
         // Rekening kosong lebih buruk daripada mengakui bahwa pembayarannya
         // sedang belum bisa dilayani — pelanggan tidak jadi mentransfer ke
         // nomor yang salah.
@@ -149,9 +194,20 @@ export function PanelBerlangganan({
           Tujuan pembayaran sedang belum tersedia. Silakan coba lagi nanti. Paket Gratis tetap
           bisa dipakai seperti biasa.
         </Peringatan>
-      ) : (
+      )}
+
+      {siap && niatDinyatakan && (
         <div className="rounded-xl border border-garis bg-kertas p-4">
-          <p className="text-[12.5px] font-bold text-tinta-2">Cara berlangganan</p>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-[12.5px] font-bold text-tinta-2">Cara berlangganan</p>
+            <button
+              type="button"
+              onClick={gantiPilihan}
+              className="text-[12px] font-semibold text-tinta-3 underline decoration-garis-2 underline-offset-2 hover:text-tinta"
+            >
+              Ganti pilihan paket
+            </button>
+          </div>
 
           <ol className="mt-3 space-y-3">
             <li>
@@ -185,11 +241,13 @@ export function PanelBerlangganan({
               </p>
               <div className="mt-2 ml-7 space-y-2">
                 <BarisSalin label="WhatsApp" nilai={tujuan.waNomor} />
+                {/* Pengajuannya sudah tercatat saat niat dinyatakan, jadi
+                    tautan ini kembali menjadi tautan biasa — tidak lagi
+                    membawa efek samping ke basis data. */}
                 <a
                   href={tautanWa}
                   target="_blank"
                   rel="noreferrer"
-                  onClick={catatPengajuan}
                   className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-merek text-[14px] font-bold text-white transition-colors hover:bg-merek-tua"
                 >
                   <Ikon nama="wa" size={17} />

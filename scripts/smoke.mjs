@@ -569,23 +569,100 @@ async function ujiLangganan() {
 
   periksa("halaman langganan terbuka untuk pemilik", r.status === 200, `status ${r.status}`);
   periksa("baris pengaturan layanan ada", !!aturan);
+  periksa("harga Pro bulanan Rp49.000", isi.includes("Rp49.000"));
 
-  if (aturan) {
-    const waInternasional = `62${aturan.waNomor.replace(/\D/g, "").replace(/^62/, "").replace(/^0+/, "")}`;
+  // ── Gerbang niat berlangganan ──
+  // Petunjuk transfer TIDAK boleh muncul sebelum pemilik toko menyatakan niat.
+  // Sebelum ada gerbang ini, orang yang cuma menengok harga langsung disuguhi
+  // nomor rekening seolah sudah setuju berlangganan.
+  const tokoPemilik = await db.toko.findFirst({
+    where: { pengguna: { some: { email: "budi@tendabiru.id" } } },
+    select: { id: true },
+  });
+
+  const belumMengajukan =
+    (await db.langganan.count({
+      where: { tokoId: tokoPemilik?.id, status: "MENUNGGU" },
+    })) === 0;
+
+  if (aturan && belumMengajukan) {
+    // Yang diperiksa adalah penanda yang DIRENDER, bukan seluruh sumber
+    // halaman. `PanelBerlangganan` adalah komponen klien, jadi nomor rekening
+    // ikut terserialisasi sebagai propnya di dalam muatan RSC di <script> —
+    // ada di sumber halaman walau tidak ditampilkan. Itu bukan kebocoran:
+    // nomor rekening memang untuk menerima transfer, bukan rahasia. Yang
+    // diminta di sini persetujuan, bukan kerahasiaan.
+    const dirender = isi.replace(/<script[\s\S]*?<\/script>/g, " ");
+
+    // Penanda dipilih yang benar-benar khas blok petunjuk. Frasa
+    // "Cara berlangganan" tidak bisa dipakai: kartu paket Pro memuat penunjuk
+    // "Cara berlangganan ada pada bagian di bawah" yang selalu ada.
     periksa(
-      "nomor rekening dari pengaturan ditampilkan",
-      isi.includes(aturan.bankRekening),
-      aturan.bankRekening,
+      "petunjuk transfer belum dirender sebelum niat dinyatakan",
+      !/ke rekening berikut/i.test(dirender),
     );
-    periksa("nomor WhatsApp dari pengaturan ditampilkan", isi.includes(aturan.waNomor));
     periksa(
-      "tautan wa.me memakai format internasional",
-      isi.includes(`wa.me/${waInternasional}`),
-      waInternasional,
+      "tombol konfirmasi WhatsApp belum dirender sebelum niat dinyatakan",
+      !/Konfirmasi lewat WhatsApp/i.test(dirender),
+    );
+    periksa(
+      "tombol pernyataan niat ditampilkan",
+      /Lanjut berlangganan|Lanjut perpanjang/.test(dirender),
     );
   }
 
-  periksa("harga Pro bulanan Rp49.000", isi.includes("Rp49.000"));
+  // Sesudah pengajuan tercatat, petunjuknya harus terbuka sendiri tanpa perlu
+  // menekan tombol niat lagi.
+  if (aturan && tokoPemilik) {
+    let pengajuanUji = null;
+    try {
+      pengajuanUji = await db.langganan.create({
+        data: {
+          tokoId: tokoPemilik.id,
+          paket: "PRO",
+          jumlah: 49_000,
+          periodeMulai: new Date(),
+          periodeSelesai: new Date(Date.now() + 30 * 86_400_000),
+          status: "MENUNGGU",
+          metode: "TRANSFER_UJI_ASAP",
+        },
+        select: { id: true },
+      });
+
+      const isiSesudah = await (
+        await ambil("/app/pengaturan/langganan", { headers: { cookie: pemilik } })
+      ).text();
+
+      const waInternasional = `62${aturan.waNomor
+        .replace(/\D/g, "")
+        .replace(/^62/, "")
+        .replace(/^0+/, "")}`;
+
+      periksa(
+        "rekening dari pengaturan tampil sesudah mengajukan",
+        isiSesudah.includes(aturan.bankRekening),
+        aturan.bankRekening,
+      );
+      periksa(
+        "nomor WhatsApp dari pengaturan tampil sesudah mengajukan",
+        isiSesudah.includes(aturan.waNomor),
+      );
+      periksa(
+        "tautan wa.me memakai format internasional",
+        isiSesudah.includes(`wa.me/${waInternasional}`),
+        waInternasional,
+      );
+      periksa(
+        "keadaan menunggu konfirmasi diberitahukan ke pemilik toko",
+        /Menunggu konfirmasi pembayaran/i.test(isiSesudah),
+      );
+    } finally {
+      if (pengajuanUji) await db.langganan.delete({ where: { id: pengajuanUji.id } });
+    }
+
+    const sisa = await db.langganan.count({ where: { metode: "TRANSFER_UJI_ASAP" } });
+    periksa("pengajuan uji sudah dibersihkan", sisa === 0);
+  }
 
   // Alasan teknis (payment gateway belum siap) tidak boleh bocor ke pengguna.
   const bocor = /disimulasik|simulasi|payment gateway/i.test(isi);

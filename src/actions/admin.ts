@@ -79,6 +79,14 @@ export async function konfirmasiPembayaran(langgananId: string): Promise<HasilAd
         periodeSelesai: sampai,
       },
     }),
+    // Pengajuan lain yang mungkin masih menggantung untuk toko yang sama ikut
+    // ditutup. Semestinya hanya ada satu — `ajukanLangganan` memakai ulang
+    // baris yang ada — tetapi satu baris tersisa berarti pemilik toko terus
+    // melihat peringatan "menunggu konfirmasi" padahal paketnya sudah menyala.
+    db.langganan.updateMany({
+      where: { tokoId: pengajuan.tokoId, status: "MENUNGGU", id: { not: pengajuan.id } },
+      data: { status: "DIBATALKAN" },
+    }),
     db.toko.update({
       where: { id: pengajuan.tokoId },
       data: { paket: "PRO", proSampai: sampai },
@@ -155,10 +163,24 @@ export async function perpanjangManual(
   const mulai = toko.proSampai && toko.proSampai > sekarang ? toko.proSampai : sekarang;
   const sampai = tambahHari(mulai, hari);
 
+  // Pengajuan yang masih menggantung harus ikut ditutup.
+  //
+  // Tanpa ini, mengaktifkan toko dari sini meninggalkan baris MENUNGGU yang
+  // hidup: pemilik toko terus melihat peringatan "menunggu konfirmasi
+  // pembayaran" walaupun paketnya sudah menyala, dan pengajuan yang sama tetap
+  // muncul di ringkasan operator sehingga berisiko dikonfirmasi dua kali.
+  const menggantung = await db.langganan.count({
+    where: { tokoId: toko.id, status: "MENUNGGU" },
+  });
+
   await db.$transaction([
     db.toko.update({
       where: { id: toko.id },
       data: { paket: "PRO", proSampai: sampai },
+    }),
+    db.langganan.updateMany({
+      where: { tokoId: toko.id, status: "MENUNGGU" },
+      data: { status: "DIBATALKAN" },
     }),
     db.langganan.create({
       data: {
@@ -180,10 +202,14 @@ export async function perpanjangManual(
     aksi: AKSI.perpanjang,
     tokoId: toko.id,
     tokoNama: toko.nama,
-    rincian:
+    rincian: [
       siklus === "TENGGANG"
         ? `Masa tenggang ${hari} hari sampai ${tanggalPesan(sampai)}`
         : `${rupiahSingkat(jumlah)} untuk ${hari} hari sampai ${tanggalPesan(sampai)}`,
+      menggantung > 0 ? `${menggantung} pengajuan menunggu ikut ditutup` : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
   });
 
   segarkanPanel(toko.id);
