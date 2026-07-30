@@ -240,7 +240,14 @@ Pembayaran lewat transfer bank, dikonfirmasi lewat WhatsApp. Halaman
 beserta tombol salin, dan mencatat pengajuan sebagai langganan berstatus
 `MENUNGGU`.
 
-Pengaktifan dilakukan operator setelah dana masuk:
+Nomor rekening dan nomor WhatsApp disimpan di basis data
+(`PengaturanLayanan`), bukan dipatok di dalam kode, dan diubah lewat panel
+operator. Kalau salah satunya belum lengkap, halaman langganan mengakui bahwa
+pembayaran sedang belum bisa dilayani — menampilkan rekening kosong lebih buruk
+daripada berterus terang.
+
+Pengaktifan dilakukan operator setelah dana masuk, lewat panel atau baris
+perintah:
 
 ```bash
 npm run pro                          # lihat pengajuan yang menunggu
@@ -248,17 +255,77 @@ npm run pro -- <slug|email>          # aktifkan 1 bulan
 npm run pro -- <slug|email> tahunan  # aktifkan 1 tahun
 ```
 
+> Pengaktifan tidak pernah tersedia bagi pengguna aplikasi. Server action adalah
+> endpoint yang bisa dipanggil siapa pun yang punya sesi, jadi tombol
+> "aktifkan Pro" di sisi pengguna sama artinya dengan membagikan paket Pro
+> gratis kepada siapa pun yang mau memanggilnya langsung.
+
+---
+
+## Panel operator
+
+`/admin` — untuk pengelola layanan Catad, bukan pemilik toko. Isinya: ringkasan
+pelanggan, pengajuan yang menunggu konfirmasi, daftar toko dengan saringan dan
+pencarian, detail tiap toko beserta tindakan (konfirmasi pembayaran,
+perpanjang, beri masa tenggang, hentikan, blokir), laporan keuangan langganan,
+pengaturan tujuan pembayaran, dan jejak audit.
+
+### Akun operator
+
+Hanya dibuat dari baris perintah. Tidak ada pendaftaran mandiri — panel ini
+bisa melihat seluruh toko, jadi satu-satunya jalan masuk adalah akses ke
+server.
+
+```bash
+npm run operator                                  # daftar akun
+npm run operator -- buat <email> "<nama>"         # buat, sandi diacak
+npm run operator -- sandi <email>                 # ganti sandi
+npm run operator -- matikan <email>               # nonaktifkan
+npm run operator -- buka <email>                  # lepas kunci gagal masuk
+```
+
 Di server, jalankan lewat image `migrasi` — container `app` memakai output
 standalone Next.js yang tidak memuat tsx maupun Prisma CLI:
 
 ```bash
-docker compose run --rm --no-deps migrasi npx tsx scripts/aktifkan-pro.ts <slug|email>
+docker compose run --rm --no-deps migrasi npx tsx scripts/operator.ts
 ```
 
-> Pengaktifan sengaja tidak tersedia dari dalam aplikasi. Server action adalah
-> endpoint yang bisa dipanggil siapa pun yang punya sesi, jadi tombol
-> "aktifkan Pro" di sisi pengguna sama artinya dengan membagikan paket Pro
-> gratis kepada siapa pun yang mau memanggilnya langsung.
+### Pemisahan dari sesi toko
+
+Sesi operator terpisah total dari sesi toko, dengan tiga lapis pembeda: nama
+cookie berbeda, klaim `iss`/`aud` berbeda (ikut ditandatangani, jadi tidak bisa
+diubah tanpa rahasia), dan kunci tanda tangan yang diturunkan dari `JWT_SECRET`
+dengan pemisah domain. Token toko yang sah tidak akan pernah diterima di panel,
+dan sebaliknya — keduanya diuji dari dua arah di `src/tests/auth-admin.test.ts`
+dan di uji asap.
+
+Cookie operator memakai `sameSite=strict` dan berumur 8 jam, bukan 30 hari
+seperti sesi toko: satu sesi operator yang bocor membuka semua toko sekaligus.
+Akun operator dikunci 15 menit setelah 5 percobaan gagal.
+
+### Pendapatan dihitung dari `dibayarPada`, bukan status
+
+Baris `Langganan` punya kolom `dibayarPada` yang hanya terisi saat operator
+mengonfirmasi uang masuk. Laporan keuangan menjumlahkan kolom itu, bukan
+menyaring `status`.
+
+Alasannya: status berubah sepanjang umur baris. Langganan yang sudah dibayar
+akan menjadi `KEDALUWARSA` atau `DIBATALKAN` nanti. Kalau pendapatan dihitung
+dari status, uang yang sudah diterima akan lenyap dari laporan begitu masa
+berlakunya habis. Efek sampingnya juga tepat: langganan lama yang dulu
+diaktifkan tanpa pembayaran dan masa tenggang yang diberikan gratis bernilai
+null di kolom ini, jadi tidak pernah terhitung sebagai pendapatan.
+
+### Blokir toko
+
+Blokir menutup akses seluruh akun toko, termasuk pemiliknya, dan diperiksa di
+dua tempat: saat masuk dan pada setiap halaman `/app`. Pemeriksaan kedua yang
+membuat sesi yang sedang berjalan langsung berhenti — tanpa itu, transaksi
+masih bisa masuk sampai tokennya kedaluwarsa. Data toko tidak pernah dihapus.
+
+Alasan blokir yang ditulis operator tidak ditampilkan ke pemilik toko: catatan
+itu untuk keperluan internal.
 
 ---
 

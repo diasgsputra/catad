@@ -5,6 +5,7 @@ import { konteks } from "@/lib/sesi";
 import { Kartu, KepalaKartu, Lencana, Peringatan, Tabel, Td, Th } from "@/components/ui";
 import { Ikon } from "@/components/ikon";
 import { rupiah, tanggalSingkat } from "@/lib/format";
+import { tujuanPembayaran } from "@/lib/pengaturan-layanan";
 import {
   HARGA_PRO_BULANAN,
   HARGA_PRO_TAHUNAN,
@@ -47,6 +48,8 @@ export default async function HalamanLangganan() {
   const k = await konteks();
   const sedangPro = k.paket.aktif === "PRO";
   const bolehUbah = k.sesi.peran === "PEMILIK";
+
+  const tujuan = await tujuanPembayaran();
 
   // Pengajuan yang sudah dicatat tapi pembayarannya belum dikonfirmasi.
   const pengajuan = await db.langganan.findFirst({
@@ -209,6 +212,7 @@ export default async function HalamanLangganan() {
               hargaBulanan={HARGA_PRO_BULANAN}
               hargaTahunan={HARGA_PRO_TAHUNAN}
               sedangPro={sedangPro}
+              tujuan={tujuan}
             />
           </div>
         </Kartu>

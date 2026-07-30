@@ -32,6 +32,7 @@ export type KonteksToko = {
     paket: string;
     trialSampai: Date | null;
     proSampai: Date | null;
+    diblokir: boolean;
     catatanNota: string | null;
     persenPajak: number;
     waToko: string | null;
@@ -61,6 +62,7 @@ export async function konteks(): Promise<KonteksToko> {
           paket: true,
           trialSampai: true,
           proSampai: true,
+          diblokir: true,
           catatanNota: true,
           persenPajak: true,
           waToko: true,
@@ -71,6 +73,11 @@ export async function konteks(): Promise<KonteksToko> {
 
   // Akun dinonaktifkan / dihapus setelah token dibuat.
   if (!pengguna) redirect("/keluar");
+
+  // Blokir diperiksa lebih dulu daripada apa pun. Toko yang diblokir tidak
+  // boleh membuka satu halaman pun, termasuk kasir — kalau tidak, transaksi
+  // masih bisa masuk selama sesi lamanya belum kedaluwarsa.
+  if (pengguna.toko.diblokir) redirect("/keluar?alasan=blokir");
 
   const paket = statusPaket(pengguna.toko);
 

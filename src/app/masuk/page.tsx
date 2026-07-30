@@ -4,7 +4,9 @@ import { db } from "@/lib/db";
 import { BingkaiAuth } from "@/components/bingkai-auth";
 import { Peringatan } from "@/components/ui";
 import { dataDemoAda } from "@/lib/data-demo";
-import { PESAN_KUOTA_AKUN } from "@/lib/kuota";
+import { PESAN_KUOTA_AKUN, PESAN_TOKO_DIBLOKIR } from "@/lib/kuota";
+import { keWaInternasional } from "@/lib/pembayaran";
+import { tujuanPembayaran } from "@/lib/pengaturan-layanan";
 import { demoDiizinkan } from "@/actions/demo";
 import { KartuDemo } from "./kartu-demo";
 import { FormMasuk } from "./form-masuk";
@@ -18,6 +20,10 @@ export default async function HalamanMasuk({
   searchParams: Promise<{ lanjut?: string; email?: string; alasan?: string }>;
 }) {
   const [sp, boleh] = await Promise.all([searchParams, demoDiizinkan()]);
+
+  // Nomor WhatsApp layanan hanya diperlukan saat memberi tahu toko yang
+  // diblokir ke mana harus menghubungi.
+  const wa = sp.alasan === "blokir" ? keWaInternasional((await tujuanPembayaran()).waNomor) : "";
 
   // Teks tombol menyesuaikan: menyiapkan data dulu, atau langsung membuka
   // toko contoh yang sudah ada. Kalau basis data belum siap, anggap belum ada
@@ -40,6 +46,22 @@ export default async function HalamanMasuk({
       {sp.alasan === "kuota" && (
         <Peringatan nada="waspada" className="mb-4" judul="Akun terkunci">
           {PESAN_KUOTA_AKUN}
+        </Peringatan>
+      )}
+
+      {sp.alasan === "blokir" && (
+        <Peringatan nada="bahaya" className="mb-4" judul="Akses dihentikan">
+          {PESAN_TOKO_DIBLOKIR}
+          {wa && (
+            <a
+              href={`https://wa.me/${wa}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 block font-bold underline"
+            >
+              Hubungi lewat WhatsApp
+            </a>
+          )}
         </Peringatan>
       )}
 

@@ -60,10 +60,17 @@ model Toko {
   alamat        String?
   telepon       String?
   paket         Paket    @default(GRATIS)
-  /// Akhir masa uji coba Pro (14 hari sejak daftar).
+  /// Akhir masa uji coba Pro. Lamanya ditetapkan HARI_UJI_COBA saat mendaftar,
+  /// lalu disimpan sebagai tanggal pasti — mengubah konstantanya tidak
+  /// menggeser tanggal toko yang sudah ada.
   trialSampai   DateTime?
   /// Akhir masa berlangganan Pro berbayar.
   proSampai     DateTime?
+  /// Diblokir operator. Toko yang diblokir tidak bisa dipakai masuk sama
+  /// sekali, tetapi datanya tidak pernah dihapus.
+  diblokir      Boolean  @default(false)
+  alasanBlokir  String?
+  diblokirPada  DateTime?
   /// Ditampilkan di header nota.
   catatanNota   String?  @default("Terima kasih sudah berbelanja 🙏")
   /// Persen pajak/servis yang otomatis diterapkan di kasir (0 = nonaktif).
@@ -271,9 +278,80 @@ model Langganan {
   periodeSelesai DateTime
   status         StatusLangganan @default(AKTIF)
   metode         String          @default("TRANSFER_BCA")
+  /// Saat pembayaran benar-benar dikonfirmasi operator. Inilah penanda
+  /// pendapatan, BUKAN kolom status.
+  ///
+  /// Status berubah sepanjang umur baris — langganan yang sudah dibayar bisa
+  /// jadi KEDALUWARSA atau DIBATALKAN nanti. Kalau pendapatan dihitung dari
+  /// status, uang yang sudah masuk akan hilang dari laporan begitu masa
+  /// berlakunya habis. Baris lama peninggalan aktivasi simulasi bernilai null
+  /// di sini, dan memang tidak boleh dihitung: tidak ada uang yang diterima.
+  dibayarPada    DateTime?
   dibuatPada     DateTime        @default(now())
 
   toko Toko @relation(fields: [tokoId], references: [id], onDelete: Cascade)
 
   @@index([tokoId, dibuatPada])
+  @@index([dibayarPada])
+}
+
+// ── Sisi operator layanan ───────────────────────────────────────────────────
+// Model di bawah ini milik pengelola Catad, bukan milik tenant. Sengaja
+// dipisah dari `Pengguna`: Pengguna selalu terikat satu `tokoId`, sedangkan
+// operator justru bekerja lintas toko. Kalau operator dijadikan salah satu
+// nilai enum `Peran`, setiap pemeriksaan izin yang sudah ada harus ditinjau
+// ulang satu per satu — dan satu kelalaian berarti kebocoran lintas tenant.
+
+/// Akun pengelola layanan Catad.
+model Operator {
+  id            String    @id @default(cuid())
+  nama          String
+  email         String    @unique
+  kataSandiHash String
+  aktif         Boolean   @default(true)
+  masukTerakhir DateTime?
+  /// Percobaan masuk gagal berturut-turut; dipakai untuk mengunci sementara.
+  gagalMasuk    Int       @default(0)
+  /// Terkunci sampai waktu ini. Null berarti tidak terkunci.
+  terkunciSampai DateTime?
+  dibuatPada    DateTime  @default(now())
+  diubahPada    DateTime  @updatedAt
+
+  jejak JejakOperator[]
+
+  @@index([email])
+}
+
+/// Catatan setiap tindakan operator yang mengubah keadaan toko atau layanan.
+model JejakOperator {
+  id         String   @id @default(cuid())
+  operatorId String?
+  /// Nama dan email disalin agar jejaknya tetap terbaca walau akun operatornya
+  /// dihapus. Catatan audit tidak boleh ikut hilang bersama pelakunya.
+  operatorNama String
+  aksi       String
+  tokoId     String?
+  tokoNama   String?
+  rincian    String?
+  dibuatPada DateTime @default(now())
+
+  operator Operator? @relation(fields: [operatorId], references: [id], onDelete: SetNull)
+
+  @@index([dibuatPada])
+  @@index([tokoId])
+}
+
+/// Pengaturan layanan yang berlaku global — satu baris saja.
+/// Id-nya dipaku ke "global" supaya tidak mungkin ada baris kedua.
+model PengaturanLayanan {
+  id               String   @id @default("global")
+  bankNama         String   @default("BCA")
+  bankRekening     String   @default("")
+  /// Nama pemilik rekening. Kosong berarti tidak ditampilkan ke pelanggan —
+  /// lebih baik tidak ada daripada salah.
+  bankPemilik      String?
+  waNomor          String   @default("")
+  /// Kalimat tambahan pada petunjuk pembayaran, mis. jam operasional.
+  catatanPembayaran String?
+  diubahPada       DateTime @updatedAt
 }

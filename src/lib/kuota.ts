@@ -61,7 +61,24 @@ export function akunDalamKuota(
   return idDalamKuota(akun, maksPengguna).has(penggunaId);
 }
 
-/** Pesan yang ditunjukkan ke akun yang sedang terkunci karena kuota. */
+// ── Pesan penolakan akses ───────────────────────────────────────────────────
+// Dikumpulkan di satu tempat supaya kalimat yang dilihat pengguna sama, baik
+// saat ditolak di formulir masuk maupun saat sesinya dihentikan di tengah
+// pemakaian. Kalau kalimatnya ditulis dua kali, cepat atau lambat keduanya
+// berbeda dan pengguna mengira sedang menghadapi dua masalah berbeda.
+
+/** Pesan untuk akun yang terkunci karena jumlah akun melebihi kuota paket. */
 export const PESAN_KUOTA_AKUN =
   "Akun ini sedang terkunci karena jumlah akun toko melebihi batas paket Gratis. " +
   "Minta pemilik toko berlangganan Pro atau menghapus akun yang tidak dipakai.";
+
+/**
+ * Pesan untuk toko yang diblokir operator.
+ *
+ * Alasan yang ditulis operator SENGAJA tidak ditampilkan: catatan itu untuk
+ * keperluan internal dan bisa memuat penilaian yang tidak pantas dibaca
+ * pemilik toko langsung dari halaman masuk.
+ */
+export const PESAN_TOKO_DIBLOKIR =
+  "Akses toko ini sedang dihentikan. Hubungi Catad lewat WhatsApp untuk mengetahui " +
+  "sebabnya. Seluruh data toko tetap tersimpan.";

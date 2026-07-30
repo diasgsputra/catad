@@ -9,7 +9,7 @@ import { skemaDaftar, skemaMasuk, galatForm } from "@/lib/validasi";
 import { slug } from "@/lib/utils";
 import { tambahHari } from "@/lib/format";
 import { HARI_UJI_COBA, statusPaket } from "@/lib/plan";
-import { PESAN_KUOTA_AKUN, akunDalamKuota } from "@/lib/kuota";
+import { PESAN_KUOTA_AKUN, PESAN_TOKO_DIBLOKIR, akunDalamKuota } from "@/lib/kuota";
 
 export type HasilForm = {
   galat?: Record<string, string>;
@@ -100,7 +100,13 @@ export async function masukAksi(_sebelum: HasilForm, data: FormData): Promise<Ha
       kataSandiHash: true,
       tokoId: true,
       toko: {
-        select: { nama: true, paket: true, trialSampai: true, proSampai: true },
+        select: {
+          nama: true,
+          paket: true,
+          trialSampai: true,
+          proSampai: true,
+          diblokir: true,
+        },
       },
     },
   });
@@ -119,6 +125,11 @@ export async function masukAksi(_sebelum: HasilForm, data: FormData): Promise<Ha
 
   if (!pengguna.aktif) {
     return { galat: { _: "Akun ini sudah dinonaktifkan. Hubungi pemilik toko." } };
+  }
+
+  // Toko yang diblokir ditolak untuk seluruh akunnya, termasuk pemiliknya.
+  if (pengguna.toko.diblokir) {
+    return { galat: { _: PESAN_TOKO_DIBLOKIR } };
   }
 
   // Batas jumlah akun paket Gratis ditegakkan di sini juga, bukan cuma di dalam

@@ -8,11 +8,10 @@ import { Peringatan } from "@/components/ui";
 import { ajukanLangganan, batalkanPengajuan, hentikanPro } from "@/actions/toko";
 import { rupiah } from "@/lib/format";
 import {
-  BANK_NAMA,
-  BANK_REKENING,
-  WA_NOMOR,
+  pembayaranSiap,
   pesanKonfirmasi,
   tautanKonfirmasiWa,
+  type TujuanPembayaran,
 } from "@/lib/pembayaran";
 import { cn } from "@/lib/utils";
 
@@ -73,11 +72,13 @@ export function PanelBerlangganan({
   hargaBulanan,
   hargaTahunan,
   sedangPro,
+  tujuan,
 }: {
   namaToko: string;
   hargaBulanan: number;
   hargaTahunan: number;
   sedangPro: boolean;
+  tujuan: TujuanPembayaran;
 }) {
   const router = useRouter();
   const [siklus, setSiklus] = useState<Siklus>("BULANAN");
@@ -85,8 +86,10 @@ export function PanelBerlangganan({
   const [, mulai] = useTransition();
 
   const jumlah = siklus === "TAHUNAN" ? hargaTahunan : hargaBulanan;
+  const siap = pembayaranSiap(tujuan);
 
   const tautanWa = tautanKonfirmasiWa(
+    tujuan.waNomor,
     pesanKonfirmasi({ namaToko, siklus, jumlah: rupiah(jumlah) }),
   );
 
@@ -138,58 +141,77 @@ export function PanelBerlangganan({
         </div>
       </div>
 
-      <div className="rounded-xl border border-garis bg-kertas p-4">
-        <p className="text-[12.5px] font-bold text-tinta-2">
-          Cara berlangganan
-        </p>
+      {!siap ? (
+        // Rekening kosong lebih buruk daripada mengakui bahwa pembayarannya
+        // sedang belum bisa dilayani — pelanggan tidak jadi mentransfer ke
+        // nomor yang salah.
+        <Peringatan nada="waspada" judul="Pembayaran belum bisa dilayani">
+          Tujuan pembayaran sedang belum tersedia. Silakan coba lagi nanti. Paket Gratis tetap
+          bisa dipakai seperti biasa.
+        </Peringatan>
+      ) : (
+        <div className="rounded-xl border border-garis bg-kertas p-4">
+          <p className="text-[12.5px] font-bold text-tinta-2">Cara berlangganan</p>
 
-        <ol className="mt-3 space-y-3">
-          <li>
-            <p className="flex items-baseline gap-2 text-[12.5px] text-tinta-2">
-              <span className="angka flex size-5 shrink-0 items-center justify-center rounded-full bg-tinta text-[11px] font-extrabold text-white">
-                1
-              </span>
-              Transfer <strong className="angka font-bold text-tinta">{rupiah(jumlah)}</strong> ke
-              rekening berikut.
+          <ol className="mt-3 space-y-3">
+            <li>
+              <p className="flex items-baseline gap-2 text-[12.5px] text-tinta-2">
+                <span className="angka flex size-5 shrink-0 items-center justify-center rounded-full bg-tinta text-[11px] font-extrabold text-white">
+                  1
+                </span>
+                Transfer <strong className="angka font-bold text-tinta">{rupiah(jumlah)}</strong> ke
+                rekening berikut.
+              </p>
+              <div className="mt-2 ml-7 space-y-2">
+                <BarisSalin
+                  label={`Rekening ${tujuan.bankNama}`}
+                  nilai={tujuan.bankRekening}
+                />
+                {tujuan.bankPemilik && (
+                  <p className="text-[12px] text-tinta-3">
+                    Atas nama{" "}
+                    <strong className="font-bold text-tinta-2">{tujuan.bankPemilik}</strong>
+                  </p>
+                )}
+              </div>
+            </li>
+
+            <li>
+              <p className="flex items-baseline gap-2 text-[12.5px] text-tinta-2">
+                <span className="angka flex size-5 shrink-0 items-center justify-center rounded-full bg-tinta text-[11px] font-extrabold text-white">
+                  2
+                </span>
+                Kirim bukti transfer lewat WhatsApp untuk dikonfirmasi.
+              </p>
+              <div className="mt-2 ml-7 space-y-2">
+                <BarisSalin label="WhatsApp" nilai={tujuan.waNomor} />
+                <a
+                  href={tautanWa}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={catatPengajuan}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-merek text-[14px] font-bold text-white transition-colors hover:bg-merek-tua"
+                >
+                  <Ikon nama="wa" size={17} />
+                  Konfirmasi lewat WhatsApp
+                </a>
+              </div>
+            </li>
+          </ol>
+
+          <p className="mt-3 text-[11.5px] leading-relaxed text-tinta-3">
+            Paket Pro diaktifkan setelah pembayaran dicek. Tulis nama toko{" "}
+            <strong className="font-semibold text-tinta-2">{namaToko}</strong> pada pesan
+            konfirmasi agar lebih cepat dicocokkan.
+          </p>
+
+          {tujuan.catatanPembayaran && (
+            <p className="mt-2 text-[11.5px] leading-relaxed text-tinta-3">
+              {tujuan.catatanPembayaran}
             </p>
-            <div className="mt-2 ml-7">
-              <BarisSalin
-                label={`Rekening ${BANK_NAMA}`}
-                nilai={BANK_REKENING}
-                tampilan={BANK_REKENING}
-              />
-            </div>
-          </li>
-
-          <li>
-            <p className="flex items-baseline gap-2 text-[12.5px] text-tinta-2">
-              <span className="angka flex size-5 shrink-0 items-center justify-center rounded-full bg-tinta text-[11px] font-extrabold text-white">
-                2
-              </span>
-              Kirim bukti transfer lewat WhatsApp untuk dikonfirmasi.
-            </p>
-            <div className="mt-2 ml-7 space-y-2">
-              <BarisSalin label="WhatsApp" nilai={WA_NOMOR} />
-              <a
-                href={tautanWa}
-                target="_blank"
-                rel="noreferrer"
-                onClick={catatPengajuan}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-merek text-[14px] font-bold text-white transition-colors hover:bg-merek-tua"
-              >
-                <Ikon nama="wa" size={17} />
-                Konfirmasi lewat WhatsApp
-              </a>
-            </div>
-          </li>
-        </ol>
-
-        <p className="mt-3 text-[11.5px] leading-relaxed text-tinta-3">
-          Paket Pro diaktifkan setelah pembayaran dicek. Tulis nama toko{" "}
-          <strong className="font-semibold text-tinta-2">{namaToko}</strong> pada pesan konfirmasi
-          agar lebih cepat dicocokkan.
-        </p>
-      </div>
+          )}
+        </div>
+      )}
 
       {kabar && <Peringatan nada="sukses">{kabar}</Peringatan>}
     </div>

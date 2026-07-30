@@ -562,10 +562,29 @@ async function ujiLangganan() {
   const r = await ambil("/app/pengaturan/langganan", { headers: { cookie: pemilik } });
   const isi = await r.text();
 
+  // Nomornya dibaca dari basis data, bukan ditulis ulang di sini. Kalau
+  // ditulis ulang, pengujiannya berhenti membuktikan bahwa halaman memang
+  // mengikuti pengaturan dan hanya membuktikan dua tulisan sama.
+  const aturan = await db.pengaturanLayanan.findUnique({ where: { id: "global" } });
+
   periksa("halaman langganan terbuka untuk pemilik", r.status === 200, `status ${r.status}`);
-  periksa("nomor rekening BCA ditampilkan", isi.includes("0375553291"));
-  periksa("nomor WhatsApp ditampilkan", isi.includes("081329732838"));
-  periksa("tautan wa.me memakai format internasional", isi.includes("wa.me/6281329732838"));
+  periksa("baris pengaturan layanan ada", !!aturan);
+
+  if (aturan) {
+    const waInternasional = `62${aturan.waNomor.replace(/\D/g, "").replace(/^62/, "").replace(/^0+/, "")}`;
+    periksa(
+      "nomor rekening dari pengaturan ditampilkan",
+      isi.includes(aturan.bankRekening),
+      aturan.bankRekening,
+    );
+    periksa("nomor WhatsApp dari pengaturan ditampilkan", isi.includes(aturan.waNomor));
+    periksa(
+      "tautan wa.me memakai format internasional",
+      isi.includes(`wa.me/${waInternasional}`),
+      waInternasional,
+    );
+  }
+
   periksa("harga Pro bulanan Rp49.000", isi.includes("Rp49.000"));
 
   // Alasan teknis (payment gateway belum siap) tidak boleh bocor ke pengguna.
@@ -646,6 +665,211 @@ async function ujiLangganan() {
   periksa("akun uji kuota sudah dibersihkan", sisa === 0);
 }
 
+// ── F. Panel operator ───────────────────────────────────────────────────────
+
+/**
+ * Membuat cookie sesi operator yang sah.
+ *
+ * Kuncinya diturunkan dari JWT_SECRET dengan pemisah domain yang sama seperti
+ * `src/lib/auth-admin.ts`, dan penerbit/penerimanya juga harus cocok. Kalau
+ * salah satu saja berbeda, tokennya ditolak — itu memang inti pemisahannya.
+ */
+async function cookieOperator(email) {
+  const { SignJWT } = await import("jose");
+
+  const operator = await db.operator.findUnique({
+    where: { email },
+    select: { id: true, nama: true, email: true },
+  });
+  if (!operator) return null;
+
+  const bahan = new TextEncoder().encode(`catad:operator:v1:${process.env.JWT_SECRET}`);
+  const kunci = new Uint8Array(await crypto.subtle.digest("SHA-256", bahan));
+
+  const token = await new SignJWT({
+    oid: operator.id,
+    nama: operator.nama,
+    email: operator.email,
+  })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setIssuer("catad-operator")
+    .setAudience("panel-operator")
+    .setExpirationTime("1h")
+    .sign(kunci);
+
+  return `catad_operator=${token}`;
+}
+
+const HALAMAN_PANEL = ["/admin", "/admin/toko", "/admin/keuangan", "/admin/jejak", "/admin/pengaturan"];
+
+async function ujiPanelOperator() {
+  bagian("F. Panel operator");
+
+  if (!process.env.JWT_SECRET) {
+    periksa("JWT_SECRET tersedia untuk menguji panel", false, "set JWT_SECRET dulu");
+    return;
+  }
+
+  // ── Tanpa sesi: seluruh panel tertutup ──
+  for (const jalur of HALAMAN_PANEL) {
+    const r = await ambil(jalur);
+    const tujuan = r.headers.get("location") ?? "";
+    periksa(
+      `${jalur} tertutup tanpa sesi operator`,
+      (r.status === 307 || r.status === 302) && tujuan.includes("/admin/masuk"),
+      `status ${r.status}, location ${tujuan || "-"}`,
+    );
+  }
+
+  const rMasuk = await ambil("/admin/masuk");
+  periksa("halaman masuk operator terbuka", rMasuk.status === 200, `status ${rMasuk.status}`);
+  const isiMasuk = await rMasuk.text();
+  periksa("halaman masuk operator tidak diindeks mesin pencari", /noindex/i.test(isiMasuk));
+  periksa(
+    "halaman masuk operator tidak menawarkan pendaftaran",
+    !/daftar/i.test(isiMasuk) || /hanya dibuat lewat baris perintah/i.test(isiMasuk),
+  );
+
+  // ── Sesi TOKO tidak boleh membuka panel ──
+  // Ini pemeriksaan terpenting di bagian ini: satu kebocoran di sini membuat
+  // setiap pemegang akun kasir bisa melihat dan mengubah semua toko.
+  const sesiToko = await cookieSesi("demo@catad.id");
+  if (sesiToko) {
+    for (const jalur of HALAMAN_PANEL) {
+      const r = await ambil(jalur, { headers: { cookie: sesiToko } });
+      const tujuan = r.headers.get("location") ?? "";
+      periksa(
+        `sesi toko ditolak di ${jalur}`,
+        (r.status === 307 || r.status === 302) && tujuan.includes("/admin/masuk"),
+        `status ${r.status}, location ${tujuan || "-"}`,
+      );
+    }
+  }
+
+  // ── Sesi operator ──
+  const operator = await cookieOperator("operator@catad.id");
+  if (!operator) {
+    periksa(
+      "akun operator tersedia untuk pengujian",
+      false,
+      'jalankan: npm run operator -- buat operator@catad.id "Uji"',
+    );
+    return;
+  }
+
+  for (const jalur of HALAMAN_PANEL) {
+    const r = await ambil(jalur, { headers: { cookie: operator } });
+    periksa(`operator bisa membuka ${jalur}`, r.status === 200, `status ${r.status}`);
+  }
+
+  const isiPanel = await (await ambil("/admin", { headers: { cookie: operator } })).text();
+  periksa("panel tidak diindeks mesin pencari", /noindex/i.test(isiPanel));
+  periksa("panel menyebut nama operator yang masuk", isiPanel.includes("operator@catad.id"));
+
+  // ── Sesi operator tidak boleh membuka aplikasi toko ──
+  // Arah sebaliknya sama pentingnya: operator tidak punya toko, jadi tidak ada
+  // ruang data yang boleh dibukanya lewat /app.
+  for (const jalur of ["/app", "/app/kasir"]) {
+    const r = await ambil(jalur, { headers: { cookie: operator } });
+    const tujuan = r.headers.get("location") ?? "";
+    periksa(
+      `sesi operator ditolak di ${jalur}`,
+      (r.status === 307 || r.status === 302) && tujuan.includes("/masuk"),
+      `status ${r.status}, location ${tujuan || "-"}`,
+    );
+  }
+
+  // ── Keluar panel ──
+  const rKeluar = await ambil("/admin/keluar", { headers: { cookie: operator } });
+  const lokasiKeluar = rKeluar.headers.get("location") ?? "";
+  periksa(
+    "keluar panel mengalihkan ke lokasi relatif",
+    lokasiKeluar === "/admin/masuk",
+    lokasiKeluar,
+  );
+  periksa(
+    "keluar panel tidak membocorkan alamat internal server",
+    !lokasiKeluar.includes("0.0.0.0") && !lokasiKeluar.includes(":3000"),
+    lokasiKeluar,
+  );
+  periksa(
+    "keluar panel menghapus cookie operator",
+    (rKeluar.headers.get("set-cookie") ?? "").includes("catad_operator="),
+  );
+
+  // ── Blokir toko benar-benar menutup akses ──
+  const tokoUji = await db.toko.findFirst({
+    where: { pengguna: { some: { email: "budi@tendabiru.id" } } },
+    select: { id: true, diblokir: true },
+  });
+
+  if (tokoUji) {
+    try {
+      await db.toko.update({
+        where: { id: tokoUji.id },
+        data: { diblokir: true, alasanBlokir: "uji asap", diblokirPada: new Date() },
+      });
+
+      const sesiDiblokir = await cookieSesi("budi@tendabiru.id");
+      const rBlokir = await ambil("/app", { headers: { cookie: sesiDiblokir } });
+      const tujuanBlokir = rBlokir.headers.get("location") ?? "";
+
+      periksa(
+        "toko yang diblokir dialihkan keluar dari /app",
+        (rBlokir.status === 307 || rBlokir.status === 302) &&
+          tujuanBlokir.includes("alasan=blokir"),
+        `status ${rBlokir.status}, location ${tujuanBlokir || "-"}`,
+      );
+
+      const rKasirBlokir = await ambil("/app/kasir", { headers: { cookie: sesiDiblokir } });
+      periksa(
+        "toko yang diblokir tidak bisa membuka kasir",
+        rKasirBlokir.status === 307 || rKasirBlokir.status === 302,
+        `status ${rKasirBlokir.status}`,
+      );
+
+      const isiMasukBlokir = await (await ambil("/masuk?alasan=blokir")).text();
+      periksa(
+        "halaman masuk menjelaskan akses dihentikan",
+        /dihentikan/i.test(isiMasukBlokir),
+      );
+      periksa(
+        "alasan blokir internal tidak dibocorkan ke pemilik toko",
+        !isiMasukBlokir.includes("uji asap"),
+      );
+    } finally {
+      await db.toko.update({
+        where: { id: tokoUji.id },
+        data: { diblokir: false, alasanBlokir: null, diblokirPada: null },
+      });
+    }
+
+    const kembali = await db.toko.findUnique({
+      where: { id: tokoUji.id },
+      select: { diblokir: true },
+    });
+    periksa("blokir uji sudah dibuka kembali", kembali?.diblokir === false);
+  }
+
+  // ── Pendapatan hanya dari baris yang sudah dibayar ──
+  const adaBelumDibayar = await db.langganan.count({ where: { dibayarPada: null } });
+  const sudahDibayar = await db.langganan.count({ where: { dibayarPada: { not: null } } });
+  periksa(
+    "pendapatan dibedakan dari status langganan",
+    adaBelumDibayar + sudahDibayar > 0,
+    `${sudahDibayar} dibayar, ${adaBelumDibayar} belum`,
+  );
+
+  const isiKeuangan = await (
+    await ambil("/admin/keuangan", { headers: { cookie: operator } })
+  ).text();
+  periksa(
+    "halaman keuangan menyatakan dasar perhitungannya",
+    /sudah dikonfirmasi/i.test(isiKeuangan),
+  );
+}
+
 // ── Jalankan ────────────────────────────────────────────────────────────────
 
 async function utama() {
@@ -687,6 +911,14 @@ async function utama() {
     gagal += 1;
     kegagalan.push(`Pengujian langganan terhenti: ${galat.message}`);
     console.log(`[31mGAGAL[0m pengujian langganan terhenti — ${galat.message}`);
+  }
+
+  try {
+    await ujiPanelOperator();
+  } catch (galat) {
+    gagal += 1;
+    kegagalan.push(`Pengujian panel operator terhenti: ${galat.message}`);
+    console.log(`[31mGAGAL[0m pengujian panel operator terhenti — ${galat.message}`);
   }
 
   console.log("");

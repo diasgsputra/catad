@@ -24,6 +24,42 @@ export const skemaMasuk = z.object({
   kataSandi: z.string().min(1, "Kata sandi wajib diisi"),
 });
 
+/**
+ * Tujuan pembayaran langganan yang diatur operator.
+ *
+ * Nomor rekening dan WhatsApp hanya boleh berisi angka dan pemisah yang biasa
+ * dipakai orang (spasi, tanda hubung, plus, tanda kurung). Kalau teks bebas
+ * diizinkan, nomor yang salah tulis baru terlihat setelah ada pelanggan yang
+ * gagal transfer.
+ */
+const nomorSkema = /^[0-9+\-\s()]+$/;
+
+export const skemaTujuanPembayaran = z.object({
+  bankNama: z.string().trim().min(2, "Nama bank wajib diisi").max(30),
+  bankRekening: z
+    .string()
+    .trim()
+    .min(6, "Nomor rekening terlalu pendek")
+    .max(30)
+    .regex(nomorSkema, "Nomor rekening hanya boleh berisi angka dan pemisah"),
+  bankPemilik: z.string().trim().max(60).optional(),
+  waNomor: z
+    .string()
+    .trim()
+    .min(8, "Nomor WhatsApp terlalu pendek")
+    .max(24)
+    .regex(nomorSkema, "Nomor WhatsApp hanya boleh berisi angka dan pemisah"),
+  catatanPembayaran: z.string().trim().max(200).optional(),
+});
+
+export const skemaAlasanBlokir = z.object({
+  alasan: z
+    .string()
+    .trim()
+    .min(4, "Tulis alasan blokirnya, minimal 4 karakter")
+    .max(200, "Alasan terlalu panjang"),
+});
+
 export const skemaProduk = z.object({
   id: z.string().optional(),
   nama: z.string().trim().min(1, "Nama barang wajib diisi").max(80, "Nama terlalu panjang"),

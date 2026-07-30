@@ -7,7 +7,7 @@ import { NAMA_COOKIE } from "@/lib/auth";
  * Sengaja berupa daftar tertutup: nilainya masuk ke header Location, jadi teks
  * bebas dari URL tidak boleh ikut. Yang tidak dikenali diabaikan saja.
  */
-const ALASAN_SAH = new Set(["kuota"]);
+const ALASAN_SAH = new Set(["kuota", "blokir"]);
 
 /**
  * Keluar dari akun.

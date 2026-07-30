@@ -14,7 +14,7 @@ import {
   galatForm,
 } from "@/lib/validasi";
 import { tambahHari } from "@/lib/format";
-import { BANK_NAMA } from "@/lib/pembayaran";
+import { tujuanPembayaran } from "@/lib/pengaturan-layanan";
 import { HARGA_PRO_BULANAN, HARGA_PRO_TAHUNAN, pesanBatas } from "@/lib/plan";
 import type { HasilAksi } from "./produk";
 
@@ -215,13 +215,17 @@ export async function ajukanLangganan(siklus: "BULANAN" | "TAHUNAN"): Promise<Ha
   // ada supaya hari yang sudah dibayar tidak hangus.
   const mulai = k.toko.proSampai && k.toko.proSampai > sekarang ? k.toko.proSampai : sekarang;
 
+  // Nama bank ikut dicatat supaya riwayat tetap terbaca kalau tujuan
+  // pembayarannya diganti nanti.
+  const { bankNama } = await tujuanPembayaran();
+
   const data = {
     paket: "PRO" as const,
     jumlah,
     periodeMulai: mulai,
     periodeSelesai: tambahHari(mulai, hari),
     status: "MENUNGGU" as const,
-    metode: `TRANSFER_${BANK_NAMA}`,
+    metode: `TRANSFER_${bankNama || "BANK"}`,
   };
 
   // Satu toko cukup punya satu pengajuan terbuka. Kalau pemilik berubah pikiran

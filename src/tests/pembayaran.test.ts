@@ -1,40 +1,87 @@
 import { describe, expect, it } from "vitest";
 import {
-  BANK_NAMA,
-  BANK_REKENING,
-  WA_NOMOR,
-  WA_NOMOR_INTERNASIONAL,
+  keWaInternasional,
+  pembayaranSiap,
   pesanKonfirmasi,
   tautanKonfirmasiWa,
+  type TujuanPembayaran,
 } from "@/lib/pembayaran";
 
-describe("tujuan pembayaran", () => {
-  it("nomor rekening hanya angka, tanpa spasi atau tanda pisah", () => {
-    // Nomor ini disalin langsung ke aplikasi mobile banking; satu spasi saja
-    // sudah bisa membuat tempelannya ditolak.
-    expect(BANK_REKENING).toMatch(/^\d+$/);
-    expect(BANK_NAMA.length).toBeGreaterThan(0);
+const LENGKAP: TujuanPembayaran = {
+  bankNama: "BCA",
+  bankRekening: "0375553291",
+  bankPemilik: null,
+  waNomor: "081329732838",
+  catatanPembayaran: null,
+};
+
+describe("keWaInternasional", () => {
+  it("mengubah nomor gaya lokal menjadi berawalan 62", () => {
+    expect(keWaInternasional("081329732838")).toBe("6281329732838");
   });
 
-  it("nomor WhatsApp internasional memakai 62 tanpa nol maupun tanda plus", () => {
-    // wa.me menolak awalan "0" dan tanda "+", tautannya jadi mati.
-    expect(WA_NOMOR_INTERNASIONAL).toMatch(/^62\d+$/);
-    expect(WA_NOMOR_INTERNASIONAL.startsWith("620")).toBe(false);
+  it("membiarkan nomor yang sudah internasional", () => {
+    expect(keWaInternasional("6281329732838")).toBe("6281329732838");
   });
 
-  it("nomor lokal dan internasional menunjuk nomor yang sama", () => {
-    expect(WA_NOMOR.startsWith("0")).toBe(true);
-    expect(WA_NOMOR_INTERNASIONAL).toBe(`62${WA_NOMOR.slice(1)}`);
+  it("membuang spasi, tanda hubung, dan tanda plus", () => {
+    expect(keWaInternasional("+62 813-2973-2838")).toBe("6281329732838");
+    expect(keWaInternasional("(0813) 2973 2838")).toBe("6281329732838");
+  });
+
+  it("tidak menempelkan kode negara dua kali", () => {
+    // wa.me menolak "6262…" — dan tautan mati baru terlihat setelah ada
+    // pelanggan yang menekannya.
+    expect(keWaInternasional("6281329732838").startsWith("6262")).toBe(false);
+    expect(keWaInternasional("+62 0813 2973 2838")).toBe("6281329732838");
+  });
+
+  it("menerima nomor tanpa nol maupun kode negara", () => {
+    expect(keWaInternasional("81329732838")).toBe("6281329732838");
+  });
+
+  it("nomor lokal yang kebetulan berawalan 62 setelah nol tetap utuh", () => {
+    // 0621… adalah nomor area yang sah; angka 62 di dalamnya bukan kode negara.
+    expect(keWaInternasional("0621234567")).toBe("62621234567");
+  });
+
+  it("mengembalikan kosong untuk masukan yang tidak berisi angka", () => {
+    expect(keWaInternasional("")).toBe("");
+    expect(keWaInternasional("-- ()")).toBe("");
+    expect(keWaInternasional("0")).toBe("");
+  });
+});
+
+describe("pembayaranSiap", () => {
+  it("siap bila rekening dan WhatsApp terisi", () => {
+    expect(pembayaranSiap(LENGKAP)).toBe(true);
+  });
+
+  it("belum siap bila rekening kosong", () => {
+    expect(pembayaranSiap({ ...LENGKAP, bankRekening: "   " })).toBe(false);
+  });
+
+  it("belum siap bila nomor WhatsApp tidak bisa dijadikan tautan", () => {
+    expect(pembayaranSiap({ ...LENGKAP, waNomor: "" })).toBe(false);
+    expect(pembayaranSiap({ ...LENGKAP, waNomor: "belum diisi" })).toBe(false);
   });
 });
 
 describe("tautanKonfirmasiWa", () => {
-  it("menunjuk wa.me dengan nomor yang benar", () => {
-    expect(tautanKonfirmasiWa("halo")).toBe(`https://wa.me/${WA_NOMOR_INTERNASIONAL}?text=halo`);
+  it("menunjuk wa.me dengan nomor yang sudah dinormalkan", () => {
+    expect(tautanKonfirmasiWa("081329732838", "halo")).toBe(
+      "https://wa.me/6281329732838?text=halo",
+    );
+  });
+
+  it("mengembalikan kosong bila nomornya belum diatur", () => {
+    // Tautan "https://wa.me/?text=…" akan membuka WhatsApp tanpa tujuan, jadi
+    // lebih baik tombolnya tidak dibuat sama sekali.
+    expect(tautanKonfirmasiWa("", "halo")).toBe("");
   });
 
   it("menyandikan baris baru dan spasi", () => {
-    const tautan = tautanKonfirmasiWa("baris satu\nbaris dua");
+    const tautan = tautanKonfirmasiWa("081329732838", "baris satu\nbaris dua");
 
     expect(tautan).toContain("%0A");
     expect(tautan).not.toContain(" ");
@@ -42,7 +89,7 @@ describe("tautanKonfirmasiWa", () => {
   });
 
   it("menyandikan karakter yang bisa merusak query", () => {
-    const tautan = tautanKonfirmasiWa("Toko A&B ?x=1 #2");
+    const tautan = tautanKonfirmasiWa("081329732838", "Toko A&B ?x=1 #2");
 
     expect(tautan).toContain("%26");
     expect(tautan).toContain("%3F");
