@@ -103,7 +103,9 @@ export default async function HalamanDaftarToko({
       </h1>
       <p className="mt-1 text-[13px] text-tinta-3">
         {angka(tersaring.length)} toko ditampilkan
-        {daftar.length >= 300 && " — dibatasi 300 terbaru"}.
+        {daftar.length >= 300 && " — dibatasi 300 terbaru"}. Tekan{" "}
+        <strong className="font-bold text-tinta-2">Kelola</strong> untuk mengubah langganan,
+        memberi masa tenggang, atau memblokir toko.
       </p>
 
       {/* Pencarian memakai formulir GET biasa supaya tetap bekerja tanpa
@@ -169,7 +171,8 @@ export default async function HalamanDaftarToko({
                 <Th>Status</Th>
                 <Th kanan className="hidden lg:table-cell">Berakhir</Th>
                 <Th kanan className="hidden md:table-cell">Transaksi</Th>
-                <Th kanan className="hidden lg:table-cell">Masuk terakhir</Th>
+                <Th kanan className="hidden xl:table-cell">Masuk terakhir</Th>
+                <Th />
               </tr>
             </thead>
             <tbody>
@@ -187,7 +190,7 @@ export default async function HalamanDaftarToko({
                     <Td>
                       <Link
                         href={`/admin/toko/${t.id}`}
-                        className="text-[13.5px] font-bold text-tinta hover:text-merek hover:underline"
+                        className="text-[13.5px] font-bold text-tinta underline decoration-garis-2 decoration-from-font underline-offset-2 hover:text-merek hover:decoration-merek"
                       >
                         {t.nama}
                       </Link>
@@ -225,10 +228,24 @@ export default async function HalamanDaftarToko({
                       </span>
                     </Td>
 
-                    <Td kanan className="hidden lg:table-cell">
+                    <Td kanan className="hidden xl:table-cell">
                       <span className="angka text-[12px] text-tinta-3">
                         {pemilik?.masukTerakhir ? tanggalSingkat(pemilik.masukTerakhir) : "belum"}
                       </span>
+                    </Td>
+
+                    {/* Kolom aksi yang benar-benar terlihat. Sebelumnya satu-satunya
+                        jalan ke halaman kelola adalah nama toko yang tidak diberi
+                        warna maupun garis bawah — kemampuan yang tidak kelihatan
+                        sama saja dengan tidak ada. */}
+                    <Td kanan>
+                      <Link
+                        href={`/admin/toko/${t.id}`}
+                        className="inline-flex items-center gap-1 rounded-lg border border-garis-2 px-2.5 py-1.5 text-[12.5px] font-bold whitespace-nowrap text-tinta-2 transition-colors hover:border-merek hover:bg-merek-muda hover:text-merek-tua"
+                      >
+                        Kelola
+                        <Ikon nama="kanan" size={12} />
+                      </Link>
                     </Td>
                   </tr>
                 );

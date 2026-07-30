@@ -777,6 +777,48 @@ async function ujiPanelOperator() {
     sesiOperator.email,
   );
 
+  // ── Mengubah langganan harus bisa DITEMUKAN, bukan cuma ada ──
+  // Kemampuannya pernah tersembunyi: satu-satunya jalan ke halaman kelola
+  // adalah nama toko yang tidak diberi warna maupun garis bawah, sehingga dari
+  // sisi operator seolah tidak ada cara mengubah status langganan sama sekali.
+  const isiDaftarToko = await (
+    await ambil("/admin/toko", { headers: { cookie: operator } })
+  ).text();
+
+  periksa("daftar toko menyediakan tombol kelola", isiDaftarToko.includes("Kelola"));
+
+  const tokoPertama = await db.toko.findFirst({
+    select: { id: true, nama: true },
+    orderBy: { dibuatPada: "asc" },
+  });
+
+  if (tokoPertama) {
+    periksa(
+      "tombol kelola menunjuk halaman detail toko",
+      isiDaftarToko.includes(`/admin/toko/${tokoPertama.id}`),
+    );
+
+    const isiDetail = await (
+      await ambil(`/admin/toko/${tokoPertama.id}`, { headers: { cookie: operator } })
+    ).text();
+
+    for (const tindakan of ["1 bulan", "1 tahun", "tenggang", "Blokir toko"]) {
+      periksa(
+        `halaman kelola menyediakan tindakan "${tindakan}"`,
+        isiDetail.includes(tindakan),
+      );
+    }
+
+    const rHilang = await ambil("/admin/toko/tidak-ada-id-seperti-ini", {
+      headers: { cookie: operator },
+    });
+    periksa(
+      "id toko yang tidak ada menghasilkan 404, bukan galat",
+      rHilang.status === 404,
+      `status ${rHilang.status}`,
+    );
+  }
+
   // ── Sesi operator tidak boleh membuka aplikasi toko ──
   // Arah sebaliknya sama pentingnya: operator tidak punya toko, jadi tidak ada
   // ruang data yang boleh dibukanya lewat /app.

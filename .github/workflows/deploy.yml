@@ -39,6 +39,21 @@ jobs:
       - name: Uji unit
         run: npm test
 
+      # Build dijalankan di sini, bukan hanya di server.
+      #
+      # `tsc --noEmit` tidak menangkap pelanggaran batas server/klien Next.js
+      # (mis. mengekspor nilai bukan-fungsi dari berkas "use server") maupun
+      # kegagalan mengambil aset saat build. Tanpa langkah ini, kerusakan build
+      # baru terlihat pada langkah deploy di server — tempat paling lambat dan
+      # paling mahal untuk mengetahuinya, dan paling sulit dibaca lognya.
+      - name: Bangun produksi
+        env:
+          # URL palsu; hanya agar `prisma generate` mau berjalan. Build tidak
+          # pernah menyentuh basis data.
+          DATABASE_URL: postgresql://build:build@localhost:5432/build?schema=public
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npm run build
+
   deploy:
     name: Deploy
     needs: uji
