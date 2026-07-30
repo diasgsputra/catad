@@ -674,12 +674,16 @@ async function ujiLangganan() {
  * `src/lib/auth-admin.ts`, dan penerbit/penerimanya juga harus cocok. Kalau
  * salah satu saja berbeda, tokennya ditolak — itu memang inti pemisahannya.
  */
-async function cookieOperator(email) {
+async function cookieOperator() {
   const { SignJWT } = await import("jose");
 
-  const operator = await db.operator.findUnique({
-    where: { email },
+  // Operator aktif mana pun yang ada, bukan alamat email tertentu. Alamatnya
+  // berbeda antara mesin pengembangan dan server, jadi memakunya di sini
+  // berarti pengujiannya gagal di salah satu tempat tanpa ada yang rusak.
+  const operator = await db.operator.findFirst({
+    where: { aktif: true },
     select: { id: true, nama: true, email: true },
+    orderBy: { dibuatPada: "asc" },
   });
   if (!operator) return null;
 
@@ -698,7 +702,7 @@ async function cookieOperator(email) {
     .setExpirationTime("1h")
     .sign(kunci);
 
-  return `catad_operator=${token}`;
+  return { cookie: `catad_operator=${token}`, email: operator.email };
 }
 
 const HALAMAN_PANEL = ["/admin", "/admin/toko", "/admin/keuangan", "/admin/jejak", "/admin/pengaturan"];
@@ -748,15 +752,17 @@ async function ujiPanelOperator() {
   }
 
   // ── Sesi operator ──
-  const operator = await cookieOperator("operator@catad.id");
-  if (!operator) {
+  const sesiOperator = await cookieOperator();
+  if (!sesiOperator) {
     periksa(
       "akun operator tersedia untuk pengujian",
       false,
-      'jalankan: npm run operator -- buat operator@catad.id "Uji"',
+      'jalankan: npm run operator -- buat <email> "<nama>"',
     );
     return;
   }
+
+  const operator = sesiOperator.cookie;
 
   for (const jalur of HALAMAN_PANEL) {
     const r = await ambil(jalur, { headers: { cookie: operator } });
@@ -765,7 +771,11 @@ async function ujiPanelOperator() {
 
   const isiPanel = await (await ambil("/admin", { headers: { cookie: operator } })).text();
   periksa("panel tidak diindeks mesin pencari", /noindex/i.test(isiPanel));
-  periksa("panel menyebut nama operator yang masuk", isiPanel.includes("operator@catad.id"));
+  periksa(
+    "panel menyebut operator yang masuk",
+    isiPanel.includes(sesiOperator.email),
+    sesiOperator.email,
+  );
 
   // ── Sesi operator tidak boleh membuka aplikasi toko ──
   // Arah sebaliknya sama pentingnya: operator tidak punya toko, jadi tidak ada
