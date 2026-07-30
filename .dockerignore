@@ -8,4 +8,8 @@ README.md
 npm-debug.log
 .env.local
 coverage
-scripts
+
+# scripts/ HARUS tetap masuk konteks build: stage migrator menyalinnya untuk
+# perkakas operator (scripts/aktifkan-pro.ts). Kalau folder ini dikecualikan,
+# `COPY scripts ./scripts` gagal dengan "not found" dan seluruh build berhenti.
+# Image runner tidak menyalinnya, jadi image produksi tetap tipis.
