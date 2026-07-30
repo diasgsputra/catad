@@ -14,6 +14,7 @@ import {
   galatForm,
 } from "@/lib/validasi";
 import { tambahHari } from "@/lib/format";
+import { BANK_NAMA } from "@/lib/pembayaran";
 import { HARGA_PRO_BULANAN, HARGA_PRO_TAHUNAN, pesanBatas } from "@/lib/plan";
 import type { HasilAksi } from "./produk";
 
@@ -188,12 +189,19 @@ export async function hapusPengguna(id: string): Promise<HasilAksi> {
 // ── Langganan ───────────────────────────────────────────────────────────────
 
 /**
- * Mengaktifkan paket Pro.
+ * Mencatat pengajuan langganan Pro.
  *
- * Pembayaran masih disimulasikan: belum ada integrasi payment gateway, jadi
- * langganan langsung aktif dan tercatat di tabel Langganan sebagai "SIMULASI".
+ * Aksi ini SENGAJA tidak mengaktifkan paket apa pun. Pembayaran dilakukan lewat
+ * transfer bank lalu dikonfirmasi manual, jadi yang bisa dilakukan dari sisi
+ * pengguna hanyalah menyatakan niat berlangganan. Pengaktifan dijalankan
+ * terpisah setelah dana benar-benar masuk — lihat `scripts/aktifkan-pro.mjs`.
+ *
+ * Penting: jangan pernah membuat server action yang mengaktifkan Pro langsung
+ * dari sisi pengguna. Server action adalah endpoint yang bisa dipanggil siapa
+ * saja yang punya sesi, jadi aksi seperti itu sama dengan membagikan paket Pro
+ * gratis kepada siapa pun yang mau memanggilnya.
  */
-export async function aktifkanPro(siklus: "BULANAN" | "TAHUNAN"): Promise<HasilAksi> {
+export async function ajukanLangganan(siklus: "BULANAN" | "TAHUNAN"): Promise<HasilAksi> {
   const k = await konteks();
   if (k.sesi.peran !== "PEMILIK") {
     return { pesan: "Hanya pemilik yang bisa mengatur langganan." };
@@ -203,38 +211,55 @@ export async function aktifkanPro(siklus: "BULANAN" | "TAHUNAN"): Promise<HasilA
   const hari = siklus === "TAHUNAN" ? 365 : 30;
   const jumlah = siklus === "TAHUNAN" ? HARGA_PRO_TAHUNAN : HARGA_PRO_BULANAN;
 
-  // Bila masih aktif, perpanjang dari tanggal berakhir yang sudah ada.
-  const mulai =
-    k.toko.proSampai && k.toko.proSampai > sekarang ? k.toko.proSampai : sekarang;
-  const sampai = tambahHari(mulai, hari);
+  // Bila langganan lama masih berjalan, periode baru menyambung dari sisa yang
+  // ada supaya hari yang sudah dibayar tidak hangus.
+  const mulai = k.toko.proSampai && k.toko.proSampai > sekarang ? k.toko.proSampai : sekarang;
 
-  await db.$transaction([
-    db.toko.update({
-      where: { id: k.toko.id },
-      data: { paket: "PRO", proSampai: sampai },
-    }),
-    db.langganan.create({
-      data: {
-        tokoId: k.toko.id,
-        paket: "PRO",
-        jumlah,
-        periodeMulai: mulai,
-        periodeSelesai: sampai,
-        status: "AKTIF",
-        metode: "SIMULASI",
-      },
-    }),
-  ]);
+  const data = {
+    paket: "PRO" as const,
+    jumlah,
+    periodeMulai: mulai,
+    periodeSelesai: tambahHari(mulai, hari),
+    status: "MENUNGGU" as const,
+    metode: `TRANSFER_${BANK_NAMA}`,
+  };
+
+  // Satu toko cukup punya satu pengajuan terbuka. Kalau pemilik berubah pikiran
+  // dari bulanan ke tahunan, pengajuan yang ada diperbarui saja — kalau tidak,
+  // riwayatnya penuh baris "menunggu" yang membingungkan kedua pihak.
+  const menunggu = await db.langganan.findFirst({
+    where: { tokoId: k.toko.id, status: "MENUNGGU" },
+    select: { id: true },
+  });
+
+  if (menunggu) {
+    await db.langganan.update({ where: { id: menunggu.id }, data });
+  } else {
+    await db.langganan.create({ data: { tokoId: k.toko.id, ...data } });
+  }
 
   revalidatePath("/app/pengaturan/langganan");
-  revalidatePath("/app");
-  revalidatePath("/app/insight");
-  revalidatePath("/app/laporan");
 
   return {
     sukses: true,
-    pesan: `Paket Pro aktif sampai ${sampai.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}.`,
+    pesan: "Pengajuan tercatat. Selesaikan transfer lalu konfirmasi lewat WhatsApp.",
   };
+}
+
+/** Membatalkan pengajuan yang belum dibayar. */
+export async function batalkanPengajuan(): Promise<HasilAksi> {
+  const k = await konteks();
+  if (k.sesi.peran !== "PEMILIK") {
+    return { pesan: "Hanya pemilik yang bisa mengatur langganan." };
+  }
+
+  await db.langganan.updateMany({
+    where: { tokoId: k.toko.id, status: "MENUNGGU" },
+    data: { status: "DIBATALKAN" },
+  });
+
+  revalidatePath("/app/pengaturan/langganan");
+  return { sukses: true, pesan: "Pengajuan dibatalkan." };
 }
 
 export async function hentikanPro(): Promise<HasilAksi> {

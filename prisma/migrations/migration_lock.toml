@@ -1,0 +1,3 @@
+# Berkas ini tidak untuk disunting manual.
+# Menandai konektor basis data yang dipakai seluruh migrasi di folder ini.
+provider = "postgresql"

@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { BingkaiAuth } from "@/components/bingkai-auth";
+import { Peringatan } from "@/components/ui";
 import { dataDemoAda } from "@/lib/data-demo";
+import { PESAN_KUOTA_AKUN } from "@/lib/kuota";
 import { demoDiizinkan } from "@/actions/demo";
 import { KartuDemo } from "./kartu-demo";
 import { FormMasuk } from "./form-masuk";
@@ -13,7 +15,7 @@ export const dynamic = "force-dynamic";
 export default async function HalamanMasuk({
   searchParams,
 }: {
-  searchParams: Promise<{ lanjut?: string; email?: string }>;
+  searchParams: Promise<{ lanjut?: string; email?: string; alasan?: string }>;
 }) {
   const [sp, boleh] = await Promise.all([searchParams, demoDiizinkan()]);
 
@@ -35,6 +37,12 @@ export default async function HalamanMasuk({
         </>
       }
     >
+      {sp.alasan === "kuota" && (
+        <Peringatan nada="waspada" className="mb-4" judul="Akun terkunci">
+          {PESAN_KUOTA_AKUN}
+        </Peringatan>
+      )}
+
       <FormMasuk lanjut={sp.lanjut} emailAwal={sp.email} />
       {boleh && <KartuDemo sudahAda={sudahAda} />}
     </BingkaiAuth>

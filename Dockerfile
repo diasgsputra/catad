@@ -30,6 +30,10 @@ COPY prisma ./prisma
 # Pengisi data demo memakai src/lib/data-demo.ts, implementasi yang sama
 # dengan tombol "coba akun demo" di aplikasi.
 COPY src ./src
+# Perkakas operator (mis. mengaktifkan Pro setelah pembayaran masuk). Image
+# runner berbasis output standalone dan tidak punya tsx maupun prisma CLI, jadi
+# skrip semacam ini dijalankan dari image migrator lewat `docker compose run`.
+COPY scripts ./scripts
 RUN npx prisma generate
 CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx prisma/seed.ts"]
 

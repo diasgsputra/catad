@@ -8,7 +8,8 @@ import { NAMA_COOKIE, buatToken, opsiCookie } from "@/lib/auth";
 import { skemaDaftar, skemaMasuk, galatForm } from "@/lib/validasi";
 import { slug } from "@/lib/utils";
 import { tambahHari } from "@/lib/format";
-import { HARI_UJI_COBA } from "@/lib/plan";
+import { HARI_UJI_COBA, statusPaket } from "@/lib/plan";
+import { PESAN_KUOTA_AKUN, akunDalamKuota } from "@/lib/kuota";
 
 export type HasilForm = {
   galat?: Record<string, string>;
@@ -98,7 +99,9 @@ export async function masukAksi(_sebelum: HasilForm, data: FormData): Promise<Ha
       aktif: true,
       kataSandiHash: true,
       tokoId: true,
-      toko: { select: { nama: true } },
+      toko: {
+        select: { nama: true, paket: true, trialSampai: true, proSampai: true },
+      },
     },
   });
 
@@ -116,6 +119,21 @@ export async function masukAksi(_sebelum: HasilForm, data: FormData): Promise<Ha
 
   if (!pengguna.aktif) {
     return { galat: { _: "Akun ini sudah dinonaktifkan. Hubungi pemilik toko." } };
+  }
+
+  // Batas jumlah akun paket Gratis ditegakkan di sini juga, bukan cuma di dalam
+  // /app. Kalau hanya dihalau di sana, pengguna akan terlihat "keluar sendiri"
+  // tanpa tahu sebabnya. Pemilik toko selalu lolos, jadi dia tetap bisa masuk
+  // untuk berlangganan atau merapikan akun.
+  const paket = statusPaket(pengguna.toko);
+  if (Number.isFinite(paket.batas.maksPengguna)) {
+    const akun = await db.pengguna.findMany({
+      where: { tokoId: pengguna.tokoId },
+      select: { id: true, peran: true, dibuatPada: true },
+    });
+    if (!akunDalamKuota(akun, pengguna.id, paket.batas.maksPengguna)) {
+      return { galat: { _: PESAN_KUOTA_AKUN } };
+    }
   }
 
   await db.pengguna.update({

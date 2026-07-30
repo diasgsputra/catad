@@ -1,5 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { NAMA_COOKIE } from "@/lib/auth";
+
+/**
+ * Alasan keluar yang boleh diteruskan ke halaman masuk.
+ *
+ * Sengaja berupa daftar tertutup: nilainya masuk ke header Location, jadi teks
+ * bebas dari URL tidak boleh ikut. Yang tidak dikenali diabaikan saja.
+ */
+const ALASAN_SAH = new Set(["kuota"]);
 
 /**
  * Keluar dari akun.
@@ -13,10 +21,12 @@ import { NAMA_COOKIE } from "@/lib/auth";
  * diselesaikan peramban terhadap alamat yang sedang dibuka, jadi selalu benar
  * di balik port mapping, reverse proxy, maupun domain apa pun.
  */
-function tanggapanKeluar() {
+function tanggapanKeluar(alasan?: string | null) {
+  const tujuan = alasan && ALASAN_SAH.has(alasan) ? `/masuk?alasan=${alasan}` : "/masuk";
+
   const tanggapan = new NextResponse(null, {
     status: 303, // See Other: lanjutkan dengan GET ke halaman masuk.
-    headers: { Location: "/masuk" },
+    headers: { Location: tujuan },
   });
 
   tanggapan.cookies.delete(NAMA_COOKIE);
@@ -30,8 +40,8 @@ export async function POST() {
 
 /**
  * Dipakai saat sesi sudah tidak sah lagi — `konteks()` mengalihkan ke sini
- * ketika akun dinonaktifkan atau dihapus setelah token dibuat.
+ * ketika akun dinonaktifkan, dihapus, atau berada di luar kuota paket.
  */
-export async function GET() {
-  return tanggapanKeluar();
+export async function GET(permintaan: NextRequest) {
+  return tanggapanKeluar(permintaan.nextUrl.searchParams.get("alasan"));
 }

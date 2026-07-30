@@ -15,6 +15,8 @@ import {
 import { Ikon } from "@/components/ikon";
 import { inisial } from "@/lib/utils";
 import { tanggalJam } from "@/lib/format";
+import { idDalamKuota } from "@/lib/kuota";
+import { PAKET } from "@/lib/plan";
 import { AksiPengguna, TombolTambahPengguna } from "./pengguna-klien";
 
 export const metadata: Metadata = { title: "Akun kasir" };
@@ -40,6 +42,18 @@ export default async function HalamanPengguna() {
 
   const kuotaHabis = pengguna.length >= k.paket.batas.maksPengguna;
 
+  // Akun yang masih boleh dipakai menurut kuota paket yang berlaku sekarang.
+  const dalamKuota = idDalamKuota(pengguna, k.paket.batas.maksPengguna);
+  const jumlahTerkunci = pengguna.length - dalamKuota.size;
+
+  // Selama uji coba, batas akun masih mengikuti Pro. Hitung berapa akun yang
+  // akan terkunci begitu uji coba berakhir supaya pemilik tahu lebih awal dan
+  // tidak kaget kehilangan akses kasirnya.
+  const akanTerkunci =
+    k.paket.sumber === "uji-coba"
+      ? pengguna.length - idDalamKuota(pengguna, PAKET.GRATIS.maksPengguna).size
+      : 0;
+
   return (
     <div className="p-4 sm:p-6">
       <JudulHalaman
@@ -60,6 +74,29 @@ export default async function HalamanPengguna() {
               untuk menambah sampai 10 akun.
             </>
           )}
+        </Peringatan>
+      )}
+
+      {jumlahTerkunci > 0 && (
+        <Peringatan
+          nada="bahaya"
+          className="mt-4"
+          judul={`${jumlahTerkunci} akun terkunci`}
+        >
+          Jumlah akun melebihi batas paket {k.paket.batas.label}. Akun yang ditandai{" "}
+          <strong className="font-bold">Terkunci</strong> tidak bisa dipakai untuk masuk sampai
+          Anda{" "}
+          <Link href="/app/pengaturan/langganan" className="font-bold underline">
+            berlangganan Pro
+          </Link>{" "}
+          atau menghapus akun yang tidak terpakai. Datanya tetap tersimpan.
+        </Peringatan>
+      )}
+
+      {akanTerkunci > 0 && (
+        <Peringatan nada="waspada" className="mt-4" judul="Setelah uji coba berakhir">
+          Paket Gratis hanya mengizinkan {PAKET.GRATIS.maksPengguna} akun. Bila uji coba habis dan
+          Anda belum berlangganan, {akanTerkunci} akun kasir tidak bisa dipakai untuk masuk lagi.
         </Peringatan>
       )}
 
@@ -112,7 +149,11 @@ export default async function HalamanPengguna() {
                 </Td>
 
                 <Td kanan>
-                  {p.aktif ? (
+                  {!dalamKuota.has(p.id) ? (
+                    <Lencana nada="merah" ikon="kunci">
+                      Terkunci
+                    </Lencana>
+                  ) : p.aktif ? (
                     <Lencana nada="hijau" ikon="centang">
                       Aktif
                     </Lencana>

@@ -4,7 +4,16 @@ export type NamaPaket = "GRATIS" | "PRO";
 
 export const HARGA_PRO_BULANAN = 49_000;
 export const HARGA_PRO_TAHUNAN = 470_000; // hemat 2 bulan
-export const HARI_UJI_COBA = 14;
+
+/**
+ * Lama uji coba Pro untuk toko baru, dihitung dalam hari.
+ *
+ * Batas waktunya disimpan sebagai tanggal pasti di `Toko.trialSampai` pada saat
+ * pendaftaran, bukan dihitung ulang dari konstanta ini. Jadi mengubah angka di
+ * sini hanya berlaku untuk toko yang mendaftar sesudahnya — toko yang sudah ada
+ * tetap memakai tanggal yang diterimanya dulu.
+ */
+export const HARI_UJI_COBA = 7;
 
 export type Fitur =
   | "insight"          // Catad Insight lengkap (prediksi stok + daftar belanja + briefing)

@@ -542,6 +542,110 @@ async function ujiHakAkses() {
   );
 }
 
+// ── E. Langganan & kuota akun ───────────────────────────────────────────────
+
+async function ujiLangganan() {
+  bagian("E. Langganan & kuota akun");
+
+  if (!process.env.JWT_SECRET) {
+    periksa("JWT_SECRET tersedia untuk menguji langganan", false, "set JWT_SECRET dulu");
+    return;
+  }
+
+  // ── Halaman langganan memuat tujuan pembayaran yang sebenarnya ──
+  const pemilik = await cookieSesi("budi@tendabiru.id");
+  if (!pemilik) {
+    periksa("akun pemilik paket gratis tersedia", false, "budi@tendabiru.id tidak ditemukan");
+    return;
+  }
+
+  const r = await ambil("/app/pengaturan/langganan", { headers: { cookie: pemilik } });
+  const isi = await r.text();
+
+  periksa("halaman langganan terbuka untuk pemilik", r.status === 200, `status ${r.status}`);
+  periksa("nomor rekening BCA ditampilkan", isi.includes("0375553291"));
+  periksa("nomor WhatsApp ditampilkan", isi.includes("081329732838"));
+  periksa("tautan wa.me memakai format internasional", isi.includes("wa.me/6281329732838"));
+  periksa("harga Pro bulanan Rp49.000", isi.includes("Rp49.000"));
+
+  // Alasan teknis (payment gateway belum siap) tidak boleh bocor ke pengguna.
+  const bocor = /disimulasik|simulasi|payment gateway/i.test(isi);
+  periksa("tidak menyebut pembayaran disimulasikan", !bocor);
+
+  // ── Kuota akun paket Gratis benar-benar berlaku ──
+  const toko = await db.toko.findFirst({
+    where: { pengguna: { some: { email: "budi@tendabiru.id" } } },
+    select: { id: true },
+  });
+
+  const EMAIL_UJI = "uji-kuota.smoke@catad.invalid";
+  let sementara = null;
+
+  try {
+    sementara = await db.pengguna.create({
+      data: {
+        tokoId: toko.id,
+        nama: "Kasir Uji Kuota",
+        email: EMAIL_UJI,
+        // Bukan hash bcrypt yang sah, jadi akun ini tidak bisa dipakai masuk
+        // lewat formulir walau pembersihannya gagal.
+        kataSandiHash: "$2a$10$tidak-bisa-dipakai-masuk",
+        peran: "KASIR",
+      },
+      select: { id: true },
+    });
+
+    const kasirBerlebih = await cookieSesi(EMAIL_UJI);
+    const rKasir = await ambil("/app/kasir", { headers: { cookie: kasirBerlebih } });
+    const tujuan = rKasir.headers.get("location") ?? "";
+
+    periksa(
+      "kasir di luar kuota paket Gratis dialihkan keluar",
+      rKasir.status === 307 || rKasir.status === 302,
+      `status ${rKasir.status}`,
+    );
+    periksa("pengalihannya menyertakan alasan kuota", tujuan.includes("alasan=kuota"), tujuan);
+
+    // Hop kedua: /keluar harus meneruskan alasannya ke halaman masuk.
+    const rKeluar = await ambil("/keluar?alasan=kuota");
+    const tujuanKeluar = rKeluar.headers.get("location") ?? "";
+    periksa(
+      "halaman keluar meneruskan alasan ke halaman masuk",
+      tujuanKeluar === "/masuk?alasan=kuota",
+      tujuanKeluar,
+    );
+
+    // Alasan yang tidak dikenali diabaikan, bukan diteruskan mentah.
+    const rNgawur = await ambil("/keluar?alasan=https://situs-lain.example");
+    periksa(
+      "alasan keluar yang tidak dikenali diabaikan",
+      (rNgawur.headers.get("location") ?? "") === "/masuk",
+      rNgawur.headers.get("location") ?? "-",
+    );
+
+    const rMasuk = await ambil("/masuk?alasan=kuota");
+    const isiMasuk = await rMasuk.text();
+    periksa("halaman masuk menjelaskan akun terkunci", isiMasuk.includes("terkunci"));
+
+    // Pemilik tidak boleh ikut terkunci — kalau ikut, tokonya mati total.
+    const rPemilik = await ambil("/app", { headers: { cookie: pemilik } });
+    periksa("pemilik tetap bisa masuk walau kuota terlampaui", rPemilik.status === 200, `status ${rPemilik.status}`);
+
+    const isiPengguna = await (
+      await ambil("/app/pengguna", { headers: { cookie: pemilik } })
+    ).text();
+    periksa("daftar akun menandai akun yang terkunci", /terkunci/i.test(isiPengguna));
+  } finally {
+    if (sementara) {
+      await db.pengguna.delete({ where: { id: sementara.id } });
+    }
+  }
+
+  // Setelah dibersihkan, kuota kembali longgar.
+  const sisa = await db.pengguna.count({ where: { email: EMAIL_UJI } });
+  periksa("akun uji kuota sudah dibersihkan", sisa === 0);
+}
+
 // ── Jalankan ────────────────────────────────────────────────────────────────
 
 async function utama() {
@@ -575,6 +679,14 @@ async function utama() {
   } catch (galat) {
     gagal += 1;
     kegagalan.push(`Pengujian hak akses terhenti: ${galat.message}`);
+  }
+
+  try {
+    await ujiLangganan();
+  } catch (galat) {
+    gagal += 1;
+    kegagalan.push(`Pengujian langganan terhenti: ${galat.message}`);
+    console.log(`[31mGAGAL[0m pengujian langganan terhenti — ${galat.message}`);
   }
 
   console.log("");

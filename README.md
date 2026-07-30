@@ -225,10 +225,40 @@ dan stok. Angka laba dan modal tidak pernah dikirim ke halaman kasir.
 
 **Langganan** — Gratis (50 barang, riwayat 30 hari, 1 akun) dan Pro
 (Rp49.000/bulan, tanpa batas, 10 akun, Catad Insight, ekspor CSV). Semua akun
-baru otomatis mencoba Pro selama 14 hari.
+baru otomatis mencoba Pro selama 7 hari.
 
-> Pembayaran langganan masih **disimulasikan** — paket langsung aktif tanpa
-> tagihan sungguhan. Integrasi payment gateway belum dikerjakan.
+Batas jumlah akun ditegakkan saat masuk, bukan hanya saat akun ditambahkan.
+Toko yang membuat beberapa akun kasir selama masa uji coba akan melihat akun
+berlebihnya berstatus **Terkunci** begitu uji coba habis — datanya tetap
+tersimpan, hanya tidak bisa dipakai masuk sampai berlangganan atau akunnya
+dihapus. Pemilik toko selalu lolos kuota supaya tetap bisa mengurus langganan.
+
+### Pembayaran langganan
+
+Pembayaran lewat transfer bank, dikonfirmasi lewat WhatsApp. Halaman
+`/app/pengaturan/langganan` menampilkan nomor rekening dan nomor WhatsApp
+beserta tombol salin, dan mencatat pengajuan sebagai langganan berstatus
+`MENUNGGU`.
+
+Pengaktifan dilakukan operator setelah dana masuk:
+
+```bash
+npm run pro                          # lihat pengajuan yang menunggu
+npm run pro -- <slug|email>          # aktifkan 1 bulan
+npm run pro -- <slug|email> tahunan  # aktifkan 1 tahun
+```
+
+Di server, jalankan lewat image `migrasi` — container `app` memakai output
+standalone Next.js yang tidak memuat tsx maupun Prisma CLI:
+
+```bash
+docker compose run --rm --no-deps migrasi npx tsx scripts/aktifkan-pro.ts <slug|email>
+```
+
+> Pengaktifan sengaja tidak tersedia dari dalam aplikasi. Server action adalah
+> endpoint yang bisa dipanggil siapa pun yang punya sesi, jadi tombol
+> "aktifkan Pro" di sisi pengguna sama artinya dengan membagikan paket Pro
+> gratis kepada siapa pun yang mau memanggilnya langsung.
 
 ---
 

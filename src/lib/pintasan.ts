@@ -62,7 +62,12 @@ export const PINTASAN_KASIR: GrupPintasan = {
   daftar: [
     { tombol: ["ketik"], aksi: "Cari barang", catatan: "Nama atau kode barang" },
     { tombol: ["↑", "↓", "←", "→"], aksi: "Pindah sorotan barang" },
-    { tombol: ["Enter"], aksi: "Masukkan barang tersorot ke keranjang" },
+    { tombol: ["Enter"], aksi: "Tambah 1 barang tersorot ke keranjang" },
+    {
+      tombol: ["Shift", "Enter"],
+      aksi: "Kurangi 1 barang tersorot dari keranjang",
+      catatan: "Habis di angka 0 barangnya keluar dari keranjang",
+    },
     { tombol: ["Tab"], aksi: "Pindah antara daftar barang dan keranjang" },
     { tombol: ["Alt", "B"], aksi: "Bayar", catatan: "Atau: Tab lalu Enter" },
     { tombol: ["Alt", "X"], aksi: "Kosongkan keranjang" },

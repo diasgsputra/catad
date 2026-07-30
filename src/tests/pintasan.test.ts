@@ -236,4 +236,17 @@ describe("daftar pintasan", () => {
     expect(aksi).toContain("keranjang");
     expect(aksi).toContain("bayar");
   });
+
+  it("menambah dan mengurangi barang dua-duanya punya pintasan", () => {
+    // Sempat hanya ada penambah; mengurangi jumlah memaksa pakai tetikus.
+    const tambah = PINTASAN_KASIR.daftar.find(
+      (p) => p.tombol.join("+") === "Enter" && /tambah/i.test(p.aksi),
+    );
+    const kurang = PINTASAN_KASIR.daftar.find(
+      (p) => p.tombol.join("+") === "Shift+Enter" && /kurangi/i.test(p.aksi),
+    );
+
+    expect(tambah, "pintasan menambah barang").toBeDefined();
+    expect(kurang, "pintasan mengurangi barang").toBeDefined();
+  });
 });

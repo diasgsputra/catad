@@ -11,7 +11,7 @@ import {
   HARI_UJI_COBA,
   PAKET,
 } from "@/lib/plan";
-import { TombolHenti, TombolLangganan } from "./langganan-klien";
+import { PanelBerlangganan, TombolBatalPengajuan, TombolHenti } from "./langganan-klien";
 
 export const metadata: Metadata = { title: "Langganan" };
 export const dynamic = "force-dynamic";
@@ -29,10 +29,31 @@ const FITUR_BANDING: Array<{ label: string; gratis: string | boolean; pro: strin
   { label: "Akun kasir", gratis: "1 akun", pro: `${PAKET.PRO.maksPengguna} akun` },
 ];
 
+const NADA_STATUS: Record<string, "hijau" | "kuning" | "merah" | "netral"> = {
+  MENUNGGU: "kuning",
+  AKTIF: "hijau",
+  KEDALUWARSA: "netral",
+  DIBATALKAN: "merah",
+};
+
+const LABEL_STATUS: Record<string, string> = {
+  MENUNGGU: "Menunggu",
+  AKTIF: "Aktif",
+  KEDALUWARSA: "Kedaluwarsa",
+  DIBATALKAN: "Dibatalkan",
+};
+
 export default async function HalamanLangganan() {
   const k = await konteks();
   const sedangPro = k.paket.aktif === "PRO";
   const bolehUbah = k.sesi.peran === "PEMILIK";
+
+  // Pengajuan yang sudah dicatat tapi pembayarannya belum dikonfirmasi.
+  const pengajuan = await db.langganan.findFirst({
+    where: { tokoId: k.toko.id, status: "MENUNGGU" },
+    select: { id: true, jumlah: true, dibuatPada: true },
+    orderBy: { dibuatPada: "desc" },
+  });
 
   const riwayat = await db.langganan.findMany({
     where: { tokoId: k.toko.id },
@@ -107,11 +128,16 @@ export default async function HalamanLangganan() {
           </div>
         </div>
 
-        <Peringatan nada="info" className="m-4">
-          Pada versi ini pembayaran masih <strong className="font-bold">disimulasikan</strong>: paket
-          langsung aktif tanpa tagihan sungguhan. Integrasi payment gateway (QRIS/transfer)
-          direncanakan menyusul.
-        </Peringatan>
+        {pengajuan && (
+          <Peringatan nada="waspada" className="m-4" judul="Menunggu konfirmasi pembayaran">
+            Pengajuan sebesar{" "}
+            <strong className="angka font-bold">{rupiah(pengajuan.jumlah)}</strong> tercatat pada{" "}
+            {tanggalSingkat(pengajuan.dibuatPada)}. Paket Pro aktif setelah bukti transfer dicek.
+            <span className="mt-2 block">
+              <TombolBatalPengajuan />
+            </span>
+          </Peringatan>
+        )}
       </Kartu>
 
       {/* Dua paket */}
@@ -157,21 +183,11 @@ export default async function HalamanLangganan() {
           <div className="mt-4 flex-1" />
 
           {bolehUbah ? (
-            <div className="space-y-2">
-              <TombolLangganan
-                siklus="BULANAN"
-                harga={HARGA_PRO_BULANAN}
-                sedangPro={sedangPro}
-                label={sedangPro ? "Perpanjang 1 bulan" : "Aktifkan Pro bulanan"}
-              />
-              <TombolLangganan
-                siklus="TAHUNAN"
-                harga={HARGA_PRO_TAHUNAN}
-                sedangPro={sedangPro}
-                varian="kedua"
-                label={sedangPro ? "Perpanjang 1 tahun" : "Aktifkan Pro tahunan"}
-              />
-            </div>
+            <p className="text-[12.5px] leading-relaxed text-tinta-3">
+              {sedangPro
+                ? "Perpanjangan diatur pada bagian di bawah."
+                : "Cara berlangganan ada pada bagian di bawah."}
+            </p>
           ) : (
             <p className="rounded-lg bg-kertas-2 py-2.5 text-center text-[12.5px] font-semibold text-tinta-3">
               Hanya pemilik toko yang bisa mengatur langganan.
@@ -179,6 +195,24 @@ export default async function HalamanLangganan() {
           )}
         </Kartu>
       </div>
+
+      {bolehUbah && (
+        <Kartu className="mt-5">
+          <KepalaKartu
+            ikon="dompet"
+            judul={sedangPro ? "Perpanjang langganan" : "Berlangganan Pro"}
+            keterangan="Pembayaran lewat transfer bank, lalu dikonfirmasi melalui WhatsApp."
+          />
+          <div className="p-4 sm:p-5">
+            <PanelBerlangganan
+              namaToko={k.toko.nama}
+              hargaBulanan={HARGA_PRO_BULANAN}
+              hargaTahunan={HARGA_PRO_TAHUNAN}
+              sedangPro={sedangPro}
+            />
+          </div>
+        </Kartu>
+      )}
 
       {/* Perbandingan fitur */}
       <Kartu className="mt-5 overflow-hidden">
@@ -232,7 +266,9 @@ export default async function HalamanLangganan() {
                   </Td>
                   <Td>
                     <span className="text-[13px] font-semibold text-tinta">{r.paket}</span>
-                    <span className="ml-1.5 text-[11.5px] text-tinta-4">{r.metode}</span>
+                    <span className="ml-1.5 text-[11.5px] text-tinta-4">
+                      {r.metode.replace(/_/g, " ").toLowerCase()}
+                    </span>
                   </Td>
                   <Td kanan>
                     <span className="angka text-[13px] font-bold text-tinta">
@@ -240,12 +276,8 @@ export default async function HalamanLangganan() {
                     </span>
                   </Td>
                   <Td kanan>
-                    <Lencana
-                      nada={
-                        r.status === "AKTIF" ? "hijau" : r.status === "DIBATALKAN" ? "merah" : "netral"
-                      }
-                    >
-                      {r.status}
+                    <Lencana nada={NADA_STATUS[r.status] ?? "netral"}>
+                      {LABEL_STATUS[r.status] ?? r.status}
                     </Lencana>
                   </Td>
                 </tr>

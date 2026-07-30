@@ -190,7 +190,7 @@ async function buatToko(
         periodeMulai: new Date(sekarang.getTime() - 30 * MS_HARI),
         periodeSelesai: new Date(sekarang.getTime() + 335 * MS_HARI),
         status: "AKTIF",
-        metode: "SIMULASI",
+        metode: "DEMO",
       },
     });
   }

@@ -108,7 +108,7 @@ describe("batas paket", () => {
 
   it("harga dan masa uji coba sesuai yang dijanjikan di halaman depan", () => {
     expect(HARGA_PRO_BULANAN).toBe(49_000);
-    expect(HARI_UJI_COBA).toBe(14);
+    expect(HARI_UJI_COBA).toBe(7);
   });
 
   it("semua fitur analisis tertutup di paket gratis", () => {
@@ -120,6 +120,60 @@ describe("batas paket", () => {
 
   it("semua fitur terbuka di paket pro", () => {
     expect(Object.values(PAKET.PRO.fitur).every(Boolean)).toBe(true);
+  });
+});
+
+describe("uji coba satu minggu", () => {
+  // Meniru apa yang benar-benar terjadi saat mendaftar: tanggal batas dihitung
+  // sekali dari HARI_UJI_COBA lalu disimpan, dan sejak itu hanya dibandingkan.
+  const DAFTAR = new Date("2026-07-30T08:00:00.000Z");
+  const toko = {
+    paket: "GRATIS",
+    trialSampai: tambahHari(DAFTAR, HARI_UJI_COBA),
+    proSampai: null,
+  };
+
+  const padaHari = (hari: number) => statusPaket(toko, tambahHari(DAFTAR, hari));
+
+  it("masih Pro sepanjang minggu pertama", () => {
+    for (const hari of [0, 1, 3, 6]) {
+      const s = padaHari(hari);
+      expect(s.aktif, `hari ke-${hari}`).toBe("PRO");
+      expect(s.sumber, `hari ke-${hari}`).toBe("uji-coba");
+    }
+  });
+
+  it("masih Pro semenit sebelum genap seminggu", () => {
+    const sedetikSebelum = new Date(toko.trialSampai.getTime() - 60_000);
+    expect(statusPaket(toko, sedetikSebelum).aktif).toBe("PRO");
+  });
+
+  it("turun ke Gratis tepat saat seminggu genap", () => {
+    const s = statusPaket(toko, toko.trialSampai);
+
+    expect(s.aktif).toBe("GRATIS");
+    expect(s.sumber).toBe("gratis");
+    expect(s.ujiCobaHabis).toBe(true);
+    expect(punyaFitur(s, "insight")).toBe(false);
+  });
+
+  it("tetap Gratis pada hari-hari sesudahnya", () => {
+    for (const hari of [8, 30, 400]) {
+      expect(padaHari(hari).aktif, `hari ke-${hari}`).toBe("GRATIS");
+    }
+  });
+
+  it("kuota akun ikut menyusut dari 10 ke 1 saat uji coba habis", () => {
+    // Inilah yang membuat kasir tambahan bisa dibuat selama uji coba lalu
+    // terkunci sesudahnya — bukan bug, tapi harus benar-benar berlaku.
+    expect(padaHari(6).batas.maksPengguna).toBe(10);
+    expect(padaHari(8).batas.maksPengguna).toBe(1);
+  });
+
+  it("sisa hari dihitung menurun, bukan tetap", () => {
+    expect(padaHari(0).sisaUjiCoba).toBe(7);
+    expect(padaHari(3).sisaUjiCoba).toBe(4);
+    expect(padaHari(6).sisaUjiCoba).toBe(1);
   });
 });
 

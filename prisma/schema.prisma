@@ -45,6 +45,10 @@ enum StatusLangganan {
   AKTIF
   KEDALUWARSA
   DIBATALKAN
+  /// Pengajuan sudah masuk, menunggu pembayaran dikonfirmasi.
+  /// Ditaruh di urutan terakhir agar cocok dengan ALTER TYPE ... ADD VALUE
+  /// yang hanya bisa menambah nilai di ujung tanpa membangun ulang tipenya.
+  MENUNGGU
 }
 
 /// Tenant. Satu Toko = satu ruang data yang terisolasi penuh.
@@ -256,7 +260,8 @@ model Pengeluaran {
   @@index([tokoId, tanggal])
 }
 
-/// Riwayat pembayaran langganan (pembayaran disimulasikan di versi ini).
+/// Riwayat pengajuan dan pembayaran langganan.
+/// Pembayaran lewat transfer bank, dikonfirmasi manual lewat WhatsApp.
 model Langganan {
   id             String          @id @default(cuid())
   tokoId         String
@@ -265,7 +270,7 @@ model Langganan {
   periodeMulai   DateTime
   periodeSelesai DateTime
   status         StatusLangganan @default(AKTIF)
-  metode         String          @default("SIMULASI")
+  metode         String          @default("TRANSFER_BCA")
   dibuatPada     DateTime        @default(now())
 
   toko Toko @relation(fields: [tokoId], references: [id], onDelete: Cascade)

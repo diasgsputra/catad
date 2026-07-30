@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NAMA_COOKIE, bacaToken, type IsiSesi } from "./auth";
 import { db } from "./db";
+import { akunDalamKuota } from "./kuota";
 import { statusPaket, type StatusPaket } from "./plan";
 
 export type Sesi = IsiSesi;
@@ -71,10 +72,28 @@ export async function konteks(): Promise<KonteksToko> {
   // Akun dinonaktifkan / dihapus setelah token dibuat.
   if (!pengguna) redirect("/keluar");
 
+  const paket = statusPaket(pengguna.toko);
+
+  // Batas jumlah akun ditegakkan di sini, bukan hanya saat akun ditambahkan.
+  // Tanpa ini akun kasir sisa masa uji coba tetap bisa dipakai selamanya
+  // walaupun paketnya sudah turun ke Gratis yang cuma mengizinkan 1 akun.
+  //
+  // PEMILIK tidak perlu diperiksa: `idDalamKuota` selalu mendahulukannya, jadi
+  // dia pasti lolos. Sekaligus menghemat satu kueri pada setiap halaman.
+  if (pengguna.peran !== "PEMILIK" && Number.isFinite(paket.batas.maksPengguna)) {
+    const akun = await db.pengguna.findMany({
+      where: { tokoId: pengguna.toko.id },
+      select: { id: true, peran: true, dibuatPada: true },
+    });
+    if (!akunDalamKuota(akun, s.uid, paket.batas.maksPengguna)) {
+      redirect("/keluar?alasan=kuota");
+    }
+  }
+
   return {
     sesi: { ...s, peran: pengguna.peran },
     toko: pengguna.toko,
-    paket: statusPaket(pengguna.toko),
+    paket,
   };
 }
 

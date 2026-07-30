@@ -223,6 +223,43 @@ export function KasirKlien({
     });
   }, []);
 
+  /**
+   * Menggeser jumlah relatif terhadap isi keranjang saat itu.
+   *
+   * Angkanya WAJIB dihitung di dalam pembaru state, bukan dari `keranjang` yang
+   * tertangkap closure. Kalau dihitung di luar, dua penekanan tombol yang jatuh
+   * pada tick yang sama akan membaca jumlah yang sama lalu menulis hasil yang
+   * sama — penekanan kedua hilang. Ini terasa saat kasir menekan cepat atau
+   * menahan tombol sampai berulang sendiri.
+   */
+  const geserQty = useCallback(
+    (produkId: string, langkah: number, pesanTakAda?: string) => {
+      setGalat(null);
+      setKeranjang((lama) => {
+        const idx = lama.findIndex((b) => b.produkId === produkId);
+        if (idx < 0) {
+          if (pesanTakAda) setGalat(pesanTakAda);
+          return lama;
+        }
+
+        const baris = lama[idx];
+        const qtyBaru = baris.qty + langkah;
+
+        if (qtyBaru <= 0) return lama.filter((b) => b.produkId !== produkId);
+
+        if (baris.lacakStok && qtyBaru > baris.stok) {
+          setGalat(`Stok ${baris.nama} tinggal ${baris.stok} ${baris.satuan}.`);
+          return lama;
+        }
+
+        const salin = [...lama];
+        salin[idx] = { ...baris, qty: qtyBaru };
+        return salin;
+      });
+    },
+    [],
+  );
+
   const kosongkan = useCallback(() => {
     setKeranjang([]);
     setDiskon("");
@@ -351,11 +388,21 @@ export function KasirKlien({
         if (e.key === "Enter") {
           e.preventDefault();
           const pilihan = tersaring[sorotBarang];
-          if (pilihan) {
-            tambah(pilihan);
-            // Kosongkan pencarian supaya barcode berikutnya langsung terbaca.
-            if (cari) setCari("");
+          if (!pilihan) return;
+
+          // Shift+Enter mengurangi jumlah barang yang sedang disorot.
+          //
+          // Shift dipilih karena bersama Enter ia tidak pernah menghasilkan
+          // karakter apa pun, jadi tetap aman ditekan walau kursor sedang di
+          // kolom pencarian — beda dengan tombol "−" yang akan ikut terketik.
+          if (e.shiftKey) {
+            geserQty(pilihan.id, -1, `${pilihan.nama} belum ada di keranjang.`);
+            return;
           }
+
+          tambah(pilihan);
+          // Kosongkan pencarian supaya barcode berikutnya langsung terbaca.
+          if (cari) setCari("");
           return;
         }
       }
@@ -375,11 +422,11 @@ export function KasirKlien({
             return;
           case "ArrowRight":
             e.preventDefault();
-            if (baris) ubahQty(baris.produkId, baris.qty + 1);
+            if (baris) geserQty(baris.produkId, 1);
             return;
           case "ArrowLeft":
             e.preventDefault();
-            if (baris) ubahQty(baris.produkId, baris.qty - 1);
+            if (baris) geserQty(baris.produkId, -1);
             return;
           case "Delete":
             e.preventDefault();
@@ -411,6 +458,7 @@ export function KasirKlien({
     kategoriAktif,
     tambah,
     ubahQty,
+    geserQty,
     kosongkan,
     fokusCari,
   ]);
@@ -461,7 +509,8 @@ export function KasirKlien({
     zona === "barang"
       ? [
           { tombol: ["↑", "↓", "←", "→"], aksi: "Pilih barang" },
-          { tombol: ["Enter"], aksi: "Masukkan keranjang" },
+          { tombol: ["Enter"], aksi: "Tambah 1" },
+          { tombol: ["Shift", "Enter"], aksi: "Kurangi 1" },
           { tombol: ["Tab"], aksi: "Ke keranjang" },
           { tombol: ["Alt", "B"], aksi: "Bayar" },
           { tombol: ["Alt", "K"], aksi: "Kategori" },
@@ -646,9 +695,14 @@ export function KasirKlien({
         </section>
 
         {/* ── Panel keranjang ── */}
+        {/*
+          Tingginya dibiarkan mengikuti sel kisi induk. Sebelumnya dipaksa
+          `lg:h-dvh` padahal induknya hanya setinggi 100dvh dikurangi bar
+          petunjuk, sehingga tombol Bayar melimpah ke bawah dan tertutup bar.
+        */}
         <aside
           className={cn(
-            "flex min-h-0 flex-col border-l-2 bg-white transition-colors lg:h-dvh",
+            "flex min-h-0 flex-col border-l-2 bg-white transition-colors",
             zona === "keranjang" ? "border-l-kuning/40" : "border-l-transparent",
           )}
         >
@@ -719,7 +773,7 @@ export function KasirKlien({
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
-                          onClick={() => ubahQty(b.produkId, b.qty - 1)}
+                          onClick={() => geserQty(b.produkId, -1)}
                           className="flex size-7 items-center justify-center rounded-md border border-garis-2 text-tinta-2 hover:bg-kertas-2"
                           aria-label={`Kurangi ${b.nama}`}
                           tabIndex={-1}
@@ -739,7 +793,7 @@ export function KasirKlien({
                         />
                         <button
                           type="button"
-                          onClick={() => ubahQty(b.produkId, b.qty + 1)}
+                          onClick={() => geserQty(b.produkId, 1)}
                           className="flex size-7 items-center justify-center rounded-md border border-garis-2 text-tinta-2 hover:bg-kertas-2"
                           aria-label={`Tambah ${b.nama}`}
                           tabIndex={-1}
