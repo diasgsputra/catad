@@ -92,16 +92,60 @@ PORT_APP="$(sed -n 's/^PORT_APP=\([0-9]\{1,\}\).*/\1/p' .env | head -1)"
 PORT_APP="${PORT_APP:-1061}"
 echo "==> Aplikasi akan dipetakan ke port $PORT_APP"
 
-# ── 2. Bangun dan jalankan ──────────────────────────────────────────────────
+# ── 2. Ruang disk ───────────────────────────────────────────────────────────
+# Satu build Next.js lengkap menulis lapisan image dalam jumlah besar, dan
+# cache BuildKit TIDAK ikut terhapus oleh `docker image prune` di bawah. Jadi
+# cache itu tumbuh tanpa batas setiap deploy sampai disk habis — dan build yang
+# kehabisan disk gagal cepat dengan pesan yang muncul di langkah acak, bukan
+# pesan yang menyebut disk. Diperiksa lebih dulu supaya sebabnya jelas.
+ruang_gb() {
+  echo $(( $(df -Pk . | awk 'NR==2 {print $4}') / 1024 / 1024 ))
+}
+
+SISA="$(ruang_gb)"
+echo "==> Ruang disk tersedia: ${SISA} GB"
+
+if [ "$SISA" -lt 8 ]; then
+  echo "==> Ruang menipis, membersihkan cache build yang lebih tua dari 7 hari"
+  docker builder prune -f --filter 'until=168h' >/dev/null 2>&1 || true
+  SISA="$(ruang_gb)"
+  echo "==> Ruang setelah pembersihan: ${SISA} GB"
+fi
+
+if [ "$SISA" -lt 3 ]; then
+  {
+    echo "!!! Ruang disk tinggal ${SISA} GB. Build Next.js hampir pasti gagal."
+    echo "    Bersihkan di server lalu jalankan ulang deploy:"
+    echo "      docker builder prune -af"
+    echo "      docker image prune -af"
+    echo "    Jangan pakai 'docker system prune --volumes' — itu ikut menghapus"
+    echo "    volume basis data."
+  } >&2
+  exit 1
+fi
+
+# ── 3. Bangun dan jalankan ──────────────────────────────────────────────────
 echo "==> Membangun image"
 docker compose build
 
 echo "==> Menjalankan layanan"
 # Layanan "migrasi" berjalan lebih dulu dan menerapkan migrasi basis data;
 # layanan "app" baru dinyalakan setelah migrasi selesai tanpa galat.
-docker compose up -d --remove-orphans
+#
+# Kalau migrasinya gagal, `up` berhenti dengan galat singkat yang tidak
+# menyebut sebabnya — sebabnya ada di log container migrasi. Tanpa ditampilkan
+# di sini, kegagalan migrasi jadi tidak terlihat sama sekali dari GitHub
+# Actions.
+if ! docker compose up -d --remove-orphans; then
+  {
+    echo "!!! Gagal menyalakan layanan. Log migrasi 50 baris terakhir:"
+  } >&2
+  docker compose logs --tail 50 migrasi >&2 || true
+  docker compose logs --tail 20 db >&2 || true
+  exit 1
+fi
 
-# ── 3. Tunggu sampai aplikasi benar-benar melayani ──────────────────────────
+# ── 4. Tunggu sampai aplikasi benar-benar melayani ──────────────────────────
 echo "==> Menunggu aplikasi sehat"
 sehat=0
 for _ in $(seq 1 40); do
@@ -121,9 +165,15 @@ fi
 
 echo "==> Sehat: $(curl -fsS "http://127.0.0.1:${PORT_APP}/api/health")"
 
-# ── 4. Bersih-bersih ────────────────────────────────────────────────────────
+# ── 5. Bersih-bersih ────────────────────────────────────────────────────────
 # Image lama menumpuk setiap deploy dan bisa memenuhi disk server.
 docker image prune -f >/dev/null 2>&1 || true
 
+# Cache BuildKit dibatasi umur juga. `image prune` sama sekali tidak
+# menyentuhnya, jadi tanpa baris ini cache membengkak tanpa batas — satu build
+# Next.js penuh saja bisa menambah beberapa GB.
+docker builder prune -f --filter 'until=168h' >/dev/null 2>&1 || true
+
+echo "==> Ruang disk setelah bersih-bersih: $(ruang_gb) GB"
 echo "==> Deploy selesai"
 docker compose ps
