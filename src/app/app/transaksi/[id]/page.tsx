@@ -68,7 +68,7 @@ export default async function DetailTransaksi({ params }: { params: Promise<{ id
         <div>
           <Link
             href="/app/transaksi"
-            className="mb-2 inline-flex items-center gap-1 text-[12.5px] font-bold text-tinta-3 hover:text-tinta"
+            className="mb-2 inline-flex min-h-10 items-center gap-1 text-[12.5px] sm:min-h-0 font-bold text-tinta-3 hover:text-tinta"
           >
             <Ikon nama="kiri" size={12} />
             Semua transaksi

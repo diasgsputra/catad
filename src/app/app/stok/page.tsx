@@ -127,7 +127,7 @@ export default async function HalamanStok() {
             aksi={
               <Link
                 href="/app/insight"
-                className="inline-flex items-center gap-1 text-[12.5px] font-bold text-merek hover:underline"
+                className="inline-flex min-h-10 items-center gap-1 text-[12.5px] sm:min-h-0 font-bold text-merek hover:underline"
               >
                 Lihat prediksi
                 <Ikon nama="kanan" size={12} />
@@ -139,8 +139,8 @@ export default async function HalamanStok() {
               <tr>
                 <Th>Barang</Th>
                 <Th kanan>Sisa</Th>
-                <Th kanan className="hidden sm:table-cell">Minimum</Th>
-                <Th kanan className="hidden md:table-cell">Nilai modal</Th>
+                <Th kanan className="hidden md:table-cell">Minimum</Th>
+                <Th kanan className="hidden lg:table-cell">Nilai modal</Th>
                 <Th />
               </tr>
             </thead>
@@ -160,6 +160,11 @@ export default async function HalamanStok() {
                         {p.kategori?.nama && (
                           <p className="text-[11.5px] text-tinta-3">{p.kategori.nama}</p>
                         )}
+                        {/* Ambang minimum turun ke sini di layar sempit —
+                            angka sisa tanpa ambangnya tidak bisa dinilai. */}
+                        <p className="angka mt-0.5 text-[11.5px] text-tinta-4 md:hidden">
+                          minimum {p.stokMinimum} {p.satuan}
+                        </p>
                       </div>
                     </div>
                   </Td>
@@ -172,10 +177,10 @@ export default async function HalamanStok() {
                       </span>
                     )}
                   </Td>
-                  <Td kanan className="hidden sm:table-cell">
+                  <Td kanan className="hidden md:table-cell">
                     <span className="angka text-[13px] text-tinta-3">{p.stokMinimum}</span>
                   </Td>
-                  <Td kanan className="hidden md:table-cell">
+                  <Td kanan className="hidden lg:table-cell">
                     <span className="angka text-[13px] text-tinta-3">
                       {rupiah(Math.max(0, p.stok) * p.hargaModal)}
                     </span>
@@ -208,7 +213,7 @@ export default async function HalamanStok() {
                 <tr>
                   <Th>Barang</Th>
                   <Th kanan>Sisa</Th>
-                  <Th kanan className="hidden sm:table-cell">Nilai modal</Th>
+                  <Th kanan className="hidden md:table-cell">Nilai modal</Th>
                   <Th />
                 </tr>
               </thead>
@@ -233,13 +238,15 @@ export default async function HalamanStok() {
                           </span>
                         </span>
                       </Td>
-                      <Td kanan className="hidden sm:table-cell">
+                      <Td kanan className="hidden md:table-cell">
                         <span className="angka text-[13px] text-tinta-3">
                           {rupiah(Math.max(0, p.stok) * p.hargaModal)}
                         </span>
                       </Td>
+                      {/* Layar sentuh tidak punya "kursor lewat", jadi tombol
+                          atur stok harus terlihat sejak awal di sana. */}
                       <Td kanan>
-                        <span className="opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                        <span className="opacity-100 transition-opacity focus-within:opacity-100 lg:opacity-0 lg:group-hover:opacity-100">
                           <TombolAturBaris produk={daftarUntukDialog} produkId={p.id} />
                         </span>
                       </Td>

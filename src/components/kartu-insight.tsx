@@ -56,7 +56,7 @@ export function KartuInsight({
         {insight.aksi && (
           <Link
             href={insight.aksi.href}
-            className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-bold text-merek hover:underline"
+            className="mt-2 inline-flex min-h-10 items-center gap-1 text-[12.5px] sm:min-h-0 font-bold text-merek hover:underline"
           >
             {insight.aksi.label}
             <Ikon nama="kanan" size={12} />

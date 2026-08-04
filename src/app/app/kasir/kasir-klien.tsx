@@ -70,6 +70,7 @@ export function KasirKlien({
   const [sorotBarang, setSorotBarang] = useState(0);
   const [sorotKeranjang, setSorotKeranjang] = useState(0);
   const [bukaBayar, setBukaBayar] = useState(false);
+  const [bukaKeranjang, setBukaKeranjang] = useState(false);
   const [tanyaKosong, setTanyaKosong] = useState(false);
   const [metode, setMetode] = useState<string>("TUNAI");
   const [tunai, setTunai] = useState<number | "">("");
@@ -283,6 +284,16 @@ export function KasirKlien({
       // Kursor sedang di menu samping — biarkan kerangka yang mengurus.
       if (menuSampingAktif()) return;
 
+      // Lembar keranjang ponsel: Esc menutupnya, pintasan lain dibiarkan mati
+      // supaya tombol tidak menyentuh keranjang yang sedang dilihat.
+      if (bukaKeranjang) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setBukaKeranjang(false);
+        }
+        return;
+      }
+
       // Konfirmasi pengosongan keranjang.
       if (tanyaKosong) {
         if (e.key === "Enter") {
@@ -446,6 +457,7 @@ export function KasirKlien({
     return () => window.removeEventListener("keydown", tangani, true);
   }, [
     bukaBayar,
+    bukaKeranjang,
     struk,
     tanyaKosong,
     zona,
@@ -528,9 +540,16 @@ export function KasirKlien({
     <div className="flex h-[calc(100dvh-3.5rem)] flex-col lg:h-dvh">
       <div className="grid min-h-0 flex-1 grid-rows-[1fr_auto] lg:grid-cols-[1fr_380px] lg:grid-rows-1">
         {/* ── Panel barang ── */}
+        {/*
+          `min-w-0` wajib. Butir kisi bawaannya `min-width: auto`, jadi ia
+          menolak menyempit di bawah lebar min-content isinya — deretan
+          kategori yang seharusnya menggeser sendiri malah melebarkan seluruh
+          panel sampai 479px di layar 375px, dan halaman kasir ikut menggulir
+          mendatar.
+        */}
         <section
           className={cn(
-            "flex min-h-0 flex-col border-r-2 transition-colors",
+            "flex min-h-0 min-w-0 flex-col border-r-2 transition-colors",
             zona === "barang" ? "border-r-merek/30" : "border-r-garis",
           )}
         >
@@ -702,7 +721,7 @@ export function KasirKlien({
         */}
         <aside
           className={cn(
-            "flex min-h-0 flex-col border-l-2 bg-white transition-colors",
+            "flex min-h-0 min-w-0 flex-col border-l-2 bg-white transition-colors",
             zona === "keranjang" ? "border-l-kuning/40" : "border-l-transparent",
           )}
         >
@@ -734,82 +753,18 @@ export function KasirKlien({
           </header>
 
           <div className="hidden min-h-0 flex-1 overflow-y-auto lg:block">
-            {keranjang.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-                <span className="flex size-12 items-center justify-center rounded-xl border border-dashed border-garis-2 text-tinta-4">
-                  <Ikon nama="keranjang" size={22} />
-                </span>
-                <p className="mt-3 text-[14px] font-bold text-tinta-2">Keranjang kosong</p>
-                <p className="mt-1.5 text-[12.5px] leading-relaxed text-tinta-3">
-                  Ketik nama barang lalu tekan <Kunci tombol={["Enter"]} />
-                </p>
-              </div>
-            ) : (
-              <ul className="divide-y divide-garis">
-                {keranjang.map((b, i) => {
-                  const disorot = zona === "keranjang" && i === sorotKeranjang;
-                  return (
-                    <li
-                      key={b.produkId}
-                      data-baris-keranjang={i}
-                      onClick={() => {
-                        setZona("keranjang");
-                        setSorotKeranjang(i);
-                      }}
-                      className={cn(
-                        "flex items-start gap-2.5 border-l-[3px] px-4 py-3 transition-colors",
-                        disorot
-                          ? "border-l-kuning bg-kuning-muda/45"
-                          : "border-l-transparent hover:bg-kertas/60",
-                      )}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13.5px] font-bold text-tinta">{b.nama}</p>
-                        <p className="angka mt-0.5 text-[12px] text-tinta-3">
-                          {rupiah(b.harga)} × {b.qty} {b.satuan}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => geserQty(b.produkId, -1)}
-                          className="flex size-7 items-center justify-center rounded-md border border-garis-2 text-tinta-2 hover:bg-kertas-2"
-                          aria-label={`Kurangi ${b.nama}`}
-                          tabIndex={-1}
-                        >
-                          <span className="text-[15px] leading-none font-bold">−</span>
-                        </button>
-                        <input
-                          value={b.qty}
-                          onChange={(e) => {
-                            const n = parseInt(e.target.value.replace(/\D/g, ""), 10);
-                            ubahQty(b.produkId, Number.isFinite(n) ? n : 0);
-                          }}
-                          inputMode="numeric"
-                          className="angka h-7 w-9 rounded-md border border-garis-2 text-center text-[13px] font-bold focus:border-merek focus:outline-none"
-                          aria-label={`Jumlah ${b.nama}`}
-                          tabIndex={-1}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => geserQty(b.produkId, 1)}
-                          className="flex size-7 items-center justify-center rounded-md border border-garis-2 text-tinta-2 hover:bg-kertas-2"
-                          aria-label={`Tambah ${b.nama}`}
-                          tabIndex={-1}
-                        >
-                          <span className="text-[15px] leading-none font-bold">+</span>
-                        </button>
-                      </div>
-
-                      <span className="angka w-20 shrink-0 text-right text-[13.5px] font-extrabold text-tinta">
-                        {rupiah(b.harga * b.qty)}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+            <IsiKeranjang
+              keranjang={keranjang}
+              zona={zona}
+              sorotKeranjang={sorotKeranjang}
+              onPilih={(i) => {
+                setZona("keranjang");
+                setSorotKeranjang(i);
+              }}
+              geserQty={geserQty}
+              ubahQty={ubahQty}
+              bertanda
+            />
           </div>
 
           {galat && (
@@ -820,6 +775,32 @@ export function KasirKlien({
           )}
 
           <div className="border-t border-garis bg-kertas p-4">
+            {/* Di ponsel daftar keranjang tidak muat berdampingan dengan kisi
+                barang, tetapi menyembunyikannya sama sekali berarti kasir
+                tidak bisa memeriksa apa yang sudah dipindai — apalagi
+                membatalkan satu barang. Ringkasannya jadi tombol yang membuka
+                daftar itu sebagai lembar. */}
+            <button
+              type="button"
+              data-keranjang-ponsel
+              onClick={() => setBukaKeranjang(true)}
+              disabled={keranjang.length === 0}
+              className="mb-3 flex h-11 w-full items-center justify-between rounded-lg border border-garis-2 bg-white px-3 text-left disabled:opacity-55 lg:hidden"
+            >
+              <span className="flex items-center gap-2 text-[13.5px] font-bold text-tinta">
+                <Ikon nama="keranjang" size={16} className="text-tinta-3" />
+                {keranjang.length === 0
+                  ? "Keranjang kosong"
+                  : `${jumlahItem} barang di keranjang`}
+              </span>
+              {keranjang.length > 0 && (
+                <span className="flex items-center gap-1 text-[12.5px] font-bold text-merek">
+                  Periksa
+                  <Ikon nama="kanan" size={13} />
+                </span>
+              )}
+            </button>
+
             <div className="space-y-1.5">
               <div className="flex justify-between text-[13px] text-tinta-2">
                 <span>Subtotal ({jumlahItem} barang)</span>
@@ -863,6 +844,82 @@ export function KasirKlien({
       </div>
 
       <BarPetunjuk petunjuk={petunjuk} zona={zona} />
+
+      {/* ── Lembar keranjang (ponsel) ── */}
+      {bukaKeranjang && (
+        <div
+          className="fixed inset-0 z-50 flex items-end bg-tinta/50 backdrop-blur-[2px] lg:hidden"
+          onClick={() => setBukaKeranjang(false)}
+        >
+          <div
+            className="animasi-naik flex max-h-[80dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="flex shrink-0 items-center justify-between border-b border-garis px-4 py-3">
+              <div>
+                <h2 className="text-[15px] font-extrabold tracking-[-0.01em]">Keranjang</h2>
+                <p className="text-[12px] text-tinta-3">{jumlahItem} barang</p>
+              </div>
+              <div className="flex items-center gap-1">
+                {keranjang.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBukaKeranjang(false);
+                      setTanyaKosong(true);
+                    }}
+                    className="flex h-10 items-center gap-1.5 rounded-lg px-3 text-[13px] font-bold text-merah"
+                  >
+                    <Ikon nama="sampah" size={15} />
+                    Kosongkan
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setBukaKeranjang(false)}
+                  className="flex size-10 items-center justify-center rounded-lg text-tinta-3"
+                  aria-label="Tutup keranjang"
+                >
+                  <Ikon nama="silang" size={18} />
+                </button>
+              </div>
+            </header>
+
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              <IsiKeranjang
+                keranjang={keranjang}
+                zona={zona}
+                sorotKeranjang={sorotKeranjang}
+                onPilih={() => {}}
+                geserQty={geserQty}
+                ubahQty={ubahQty}
+                sentuh
+              />
+            </div>
+
+            <div className="shrink-0 border-t border-garis bg-kertas p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <div className="flex items-baseline justify-between">
+                <span className="text-[13px] font-bold text-tinta-2">TOTAL</span>
+                <span className="angka text-[22px] leading-none font-extrabold tracking-[-0.02em] text-tinta">
+                  {rupiah(total)}
+                </span>
+              </div>
+              <Tombol
+                ukuran="besar"
+                penuh
+                className="mt-3"
+                disabled={keranjang.length === 0}
+                onClick={() => {
+                  setBukaKeranjang(false);
+                  setBukaBayar(true);
+                }}
+              >
+                Bayar
+              </Tombol>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Konfirmasi kosongkan ── */}
       {tanyaKosong && (
@@ -928,6 +985,140 @@ export function KasirKlien({
       {/* ── Struk setelah berhasil ── */}
       {struk && <DialogStruk struk={struk} namaToko={namaToko} onSelesai={transaksiBaru} />}
     </div>
+  );
+}
+
+// ── Isi keranjang ───────────────────────────────────────────────────────────
+
+/**
+ * Daftar barang di keranjang, dipakai dua tempat: panel kanan di layar lebar
+ * dan lembar yang bisa dibuka di ponsel. Satu komponen supaya tombol tambah
+ * dan kurang tidak bisa berbeda perilaku di antara keduanya.
+ *
+ * `sentuh` memperbesar tombolnya untuk jari; `bertanda` menandai barisnya
+ * untuk digulirkan oleh navigasi papan ketik — hanya salinan di layar lebar
+ * yang boleh membawa penanda itu, kalau tidak `querySelector` bisa menemukan
+ * salinan yang sedang tersembunyi.
+ */
+function IsiKeranjang({
+  keranjang,
+  zona,
+  sorotKeranjang,
+  onPilih,
+  geserQty,
+  ubahQty,
+  sentuh,
+  bertanda,
+}: {
+  keranjang: BarisKeranjang[];
+  zona: Zona;
+  sorotKeranjang: number;
+  onPilih: (i: number) => void;
+  geserQty: (produkId: string, langkah: number) => void;
+  ubahQty: (produkId: string, qty: number) => void;
+  sentuh?: boolean;
+  bertanda?: boolean;
+}) {
+  if (keranjang.length === 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center px-6 py-10 text-center">
+        <span className="flex size-12 items-center justify-center rounded-xl border border-dashed border-garis-2 text-tinta-4">
+          <Ikon nama="keranjang" size={22} />
+        </span>
+        <p className="mt-3 text-[14px] font-bold text-tinta-2">Keranjang kosong</p>
+        <p className="mt-1.5 text-[12.5px] leading-relaxed text-tinta-3">
+          {sentuh ? (
+            "Ketuk barang di daftar untuk menambahkannya."
+          ) : (
+            <>
+              Ketik nama barang lalu tekan <Kunci tombol={["Enter"]} />
+            </>
+          )}
+        </p>
+      </div>
+    );
+  }
+
+  const ukuranTombol = sentuh ? "size-9" : "size-7";
+
+  return (
+    <ul className="divide-y divide-garis">
+      {keranjang.map((b, i) => {
+        const disorot = zona === "keranjang" && i === sorotKeranjang;
+        return (
+          <li
+            key={b.produkId}
+            data-baris-keranjang={bertanda ? i : undefined}
+            onClick={() => onPilih(i)}
+            className={cn(
+              "flex items-start gap-2.5 border-l-[3px] px-4 py-3 transition-colors",
+              disorot && !sentuh
+                ? "border-l-kuning bg-kuning-muda/45"
+                : "border-l-transparent hover:bg-kertas/60",
+            )}
+          >
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13.5px] font-bold text-tinta">{b.nama}</p>
+              <p className="angka mt-0.5 text-[12px] text-tinta-3">
+                {rupiah(b.harga)} × {b.qty} {b.satuan}
+              </p>
+              {sentuh && (
+                <p className="angka mt-1 text-[13px] font-extrabold text-tinta">
+                  {rupiah(b.harga * b.qty)}
+                </p>
+              )}
+            </div>
+
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={() => geserQty(b.produkId, -1)}
+                className={cn(
+                  "flex items-center justify-center rounded-md border border-garis-2 text-tinta-2 hover:bg-kertas-2",
+                  ukuranTombol,
+                )}
+                aria-label={`Kurangi ${b.nama}`}
+                tabIndex={-1}
+              >
+                <span className="text-[15px] leading-none font-bold">−</span>
+              </button>
+              <input
+                value={b.qty}
+                onChange={(e) => {
+                  const n = parseInt(e.target.value.replace(/\D/g, ""), 10);
+                  ubahQty(b.produkId, Number.isFinite(n) ? n : 0);
+                }}
+                inputMode="numeric"
+                className={cn(
+                  "angka rounded-md border border-garis-2 text-center text-[13px] font-bold focus:border-merek focus:outline-none",
+                  sentuh ? "h-9 w-11" : "h-7 w-9",
+                )}
+                aria-label={`Jumlah ${b.nama}`}
+                tabIndex={-1}
+              />
+              <button
+                type="button"
+                onClick={() => geserQty(b.produkId, 1)}
+                className={cn(
+                  "flex items-center justify-center rounded-md border border-garis-2 text-tinta-2 hover:bg-kertas-2",
+                  ukuranTombol,
+                )}
+                aria-label={`Tambah ${b.nama}`}
+                tabIndex={-1}
+              >
+                <span className="text-[15px] leading-none font-bold">+</span>
+              </button>
+            </div>
+
+            {!sentuh && (
+              <span className="angka w-20 shrink-0 text-right text-[13.5px] font-extrabold text-tinta">
+                {rupiah(b.harga * b.qty)}
+              </span>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

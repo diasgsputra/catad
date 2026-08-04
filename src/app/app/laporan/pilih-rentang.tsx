@@ -55,7 +55,7 @@ export function PilihRentang({
               disabled={terkunci}
               title={terkunci ? `Paket Gratis dibatasi ${batasHari} hari` : undefined}
               className={cn(
-                "inline-flex h-9 items-center gap-1 rounded-lg border border-garis-2 bg-white px-3 text-[12.5px] font-bold text-tinta-2 transition-colors hover:bg-kertas-2",
+                "inline-flex h-10 items-center gap-1 sm:h-9 rounded-lg border border-garis-2 bg-white px-3 text-[12.5px] font-bold text-tinta-2 transition-colors hover:bg-kertas-2",
                 terkunci && "cursor-not-allowed opacity-45 hover:bg-white",
               )}
             >
@@ -72,7 +72,7 @@ export function PilihRentang({
           value={mulai}
           max={selesai}
           onChange={(e) => terapkan(e.target.value, selesai)}
-          className="angka h-9 rounded-lg border border-garis-2 bg-white px-2.5 text-[12.5px] font-semibold text-tinta focus:border-merek focus:outline-none"
+          className="angka h-10 sm:h-9 rounded-lg border border-garis-2 bg-white px-2.5 text-[12.5px] font-semibold text-tinta focus:border-merek focus:outline-none"
           aria-label="Tanggal mulai"
         />
         <span className="text-tinta-4">–</span>
@@ -81,7 +81,7 @@ export function PilihRentang({
           value={selesai}
           min={mulai}
           onChange={(e) => terapkan(mulai, e.target.value)}
-          className="angka h-9 rounded-lg border border-garis-2 bg-white px-2.5 text-[12.5px] font-semibold text-tinta focus:border-merek focus:outline-none"
+          className="angka h-10 sm:h-9 rounded-lg border border-garis-2 bg-white px-2.5 text-[12.5px] font-semibold text-tinta focus:border-merek focus:outline-none"
           aria-label="Tanggal selesai"
         />
       </div>

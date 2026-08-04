@@ -17,9 +17,17 @@ const GAYA_VARIAN: Record<VarianTombol, string> = {
   hantu: "text-tinta-2 hover:bg-kertas-2 hover:text-tinta disabled:text-tinta-4",
 };
 
+/**
+ * Ukuran "kecil" dan "sedang" dinaikkan di layar sempit.
+ *
+ * Kerapatan yang enak dipakai dengan tetikus terlalu kecil untuk jari: tombol
+ * setinggi 32px pada daftar stok berarti setiap "Atur" adalah sasaran meleset.
+ * Di layar lebar tingginya kembali seperti semula, jadi tampilan desktop tidak
+ * ikut melar.
+ */
 const GAYA_UKURAN: Record<UkuranTombol, string> = {
-  kecil: "h-8 px-3 text-[13px] gap-1.5 rounded-lg",
-  sedang: "h-10 px-4 text-sm gap-2 rounded-lg",
+  kecil: "h-10 px-3 text-[13px] gap-1.5 rounded-lg sm:h-8",
+  sedang: "h-11 px-4 text-sm gap-2 rounded-lg sm:h-10",
   besar: "h-12 px-6 text-[15px] gap-2 rounded-xl",
 };
 
@@ -94,7 +102,7 @@ export function Kolom({
 }: React.InputHTMLAttributes<HTMLInputElement> & { galat?: string }) {
   return (
     <input
-      className={cn(DASAR_ISIAN, "h-10", galat ? "border-merah" : "border-garis-2", className)}
+      className={cn(DASAR_ISIAN, "h-11 sm:h-10", galat ? "border-merah" : "border-garis-2", className)}
       aria-invalid={!!galat}
       {...sisa}
     />
@@ -127,7 +135,7 @@ export function Pilih({
     <select
       className={cn(
         DASAR_ISIAN,
-        "h-10 appearance-none bg-[length:16px] bg-[right_0.65rem_center] bg-no-repeat pr-9",
+        "h-11 appearance-none bg-[length:16px] bg-[right_0.65rem_center] bg-no-repeat pr-9 sm:h-10",
         galat ? "border-merah" : "border-garis-2",
         className,
       )}
@@ -460,7 +468,9 @@ export function Th({
   return (
     <th
       className={cn(
-        "border-b border-garis bg-kertas/60 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.06em] text-tinta-3",
+        // Isian samping dipangkas di layar sempit: empat kolom masing-masing
+        // 16px kiri-kanan sudah menghabiskan 128px dari 375px yang tersedia.
+        "border-b border-garis bg-kertas/60 px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.06em] text-tinta-3 sm:px-4",
         kanan ? "text-right" : "text-left",
         className,
       )}
@@ -479,7 +489,7 @@ export function Td({
   return (
     <td
       className={cn(
-        "border-b border-garis px-4 py-3 align-middle text-tinta-2",
+        "border-b border-garis px-3 py-3 align-middle text-tinta-2 sm:px-4",
         kanan && "text-right",
         className,
       )}

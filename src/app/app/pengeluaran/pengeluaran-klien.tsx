@@ -141,7 +141,7 @@ export function TombolHapus({
       <button
         type="button"
         onClick={() => setBuka(true)}
-        className="flex size-7 items-center justify-center rounded-md text-tinta-4 transition-colors hover:bg-merah-muda hover:text-merah"
+        className="flex size-10 items-center justify-center sm:size-7 rounded-md text-tinta-4 transition-colors hover:bg-merah-muda hover:text-merah"
         aria-label={`Hapus pengeluaran ${kategori}`}
       >
         <Ikon nama="sampah" size={14} />

@@ -213,7 +213,7 @@ export default async function HalamanRingkasan({
               aksi={
                 <Link
                   href="/app/laporan"
-                  className="inline-flex items-center gap-1 text-[12.5px] font-bold text-merek hover:underline"
+                  className="inline-flex min-h-10 items-center gap-1 text-[12.5px] sm:min-h-0 font-bold text-merek hover:underline"
                 >
                   Detail
                   <Ikon nama="kanan" size={12} />
@@ -251,7 +251,7 @@ export default async function HalamanRingkasan({
               aksi={
                 <Link
                   href="/app/insight"
-                  className="inline-flex items-center gap-1 text-[12.5px] font-bold text-merek hover:underline"
+                  className="inline-flex min-h-10 items-center gap-1 text-[12.5px] sm:min-h-0 font-bold text-merek hover:underline"
                 >
                   Semua insight
                   <Ikon nama="kanan" size={12} />
@@ -288,7 +288,7 @@ export default async function HalamanRingkasan({
               aksi={
                 <Link
                   href="/app/stok"
-                  className="inline-flex items-center gap-1 text-[12.5px] font-bold text-merek hover:underline"
+                  className="inline-flex min-h-10 items-center gap-1 text-[12.5px] sm:min-h-0 font-bold text-merek hover:underline"
                 >
                   Kelola
                   <Ikon nama="kanan" size={12} />
@@ -356,7 +356,7 @@ export default async function HalamanRingkasan({
               aksi={
                 <Link
                   href="/app/transaksi"
-                  className="inline-flex items-center gap-1 text-[12.5px] font-bold text-merek hover:underline"
+                  className="inline-flex min-h-10 items-center gap-1 text-[12.5px] sm:min-h-0 font-bold text-merek hover:underline"
                 >
                   Semua
                   <Ikon nama="kanan" size={12} />

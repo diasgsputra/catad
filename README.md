@@ -99,6 +99,40 @@ npm run dev
 
 ---
 
+## Ponsel dan tablet
+
+Catad dipakai di dua tempat yang berbeda sifat: komputer kasir di meja, dan
+ponsel pemilik toko yang mengecek dagangannya sambil di jalan. Keduanya harus
+utuh — bukan satu versi penuh dan satu versi seadanya.
+
+**Kerangkanya berganti bentuk, bukan berganti isi.** Di layar lebar ada menu
+samping tetap; di layar sempit ada bar atas, laci menu, dan tab bawah berisi
+lima tujuan tersering. Tidak ada halaman yang hanya bisa dibuka dari salah
+satunya.
+
+**Keranjang kasir bisa diperiksa dari layar sentuh.** Panel keranjang tidak muat
+berdampingan dengan kisi barang di ponsel, jadi ringkasannya menjadi tombol yang
+membuka daftar itu sebagai lembar — lengkap dengan tombol tambah dan kurang.
+Menyembunyikannya saja berarti barang bisa dipindai tetapi tidak bisa
+dibatalkan.
+
+**Kolom tabel yang tidak muat turun ke dalam sel, bukan digeser mendatar.**
+Harga dan sisa stok pada daftar barang, ambang minimum pada daftar stok,
+kecepatan jual pada Catad Insight — semuanya pindah menjadi baris kedua di
+bawah nama. Menggeser tabel ke samping untuk melihat angka yang paling sering
+dicari bukan penyelesaian.
+
+**Tombol yang muncul saat kursor lewat harus terlihat sejak awal di layar
+sentuh.** Tidak ada "kursor lewat" di sana; tombol ubah, arsip, hapus, dan atur
+stok yang bergantung pada hover sama saja dengan tidak ada. Ada uji asap yang
+menjaga ini tidak kembali.
+
+**Sasaran ketuk minimal 40px di layar sempit, kembali rapat di layar lebar.**
+Ukuran tombol dan isian ditetapkan sekali di [`src/components/ui.tsx`](src/components/ui.tsx),
+jadi kerapatan desktop tidak ikut melar.
+
+---
+
 ## Sepenuhnya bisa dijalankan tanpa mouse
 
 Kasir warung sering satu tangan memegang barang, satu tangan di papan ketik.

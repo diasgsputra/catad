@@ -343,12 +343,16 @@ export function ProdukKlien({
         ) : (
           <Tabel>
             <thead>
+              {/* Di ponsel harga dan stok turun ke dalam sel nama sebagai baris
+                  kedua. Empat kolom pada 375px membuat tabelnya 512px dan
+                  memaksa pemakainya menggeser mendatar untuk melihat stok —
+                  padahal itu justru yang paling sering dilihat. */}
               <tr>
                 <Th>Barang</Th>
-                <Th kanan>Harga jual</Th>
-                <Th kanan className="hidden sm:table-cell">Modal</Th>
-                <Th kanan className="hidden md:table-cell">Untung</Th>
-                <Th kanan>Stok</Th>
+                <Th kanan className="hidden sm:table-cell">Harga jual</Th>
+                <Th kanan className="hidden md:table-cell">Modal</Th>
+                <Th kanan className="hidden lg:table-cell">Untung</Th>
+                <Th kanan className="hidden sm:table-cell">Stok</Th>
                 <Th />
               </tr>
             </thead>
@@ -376,23 +380,43 @@ export function ProdukKlien({
                             {p.kategoriNama && <span>{p.kategoriNama}</span>}
                             {!p.aktif && <Lencana nada="netral">Arsip</Lencana>}
                           </p>
+                          <p className="angka mt-1 flex items-center gap-1.5 text-[12.5px] sm:hidden">
+                            <span className="font-bold text-tinta">{rupiah(p.hargaJual)}</span>
+                            <span className="text-tinta-4">·</span>
+                            {!p.lacakStok ? (
+                              <span className="text-tinta-4">tanpa stok</span>
+                            ) : (
+                              <span
+                                className={cn(
+                                  "font-bold",
+                                  p.stok <= 0
+                                    ? "text-merah"
+                                    : stokRendah
+                                      ? "text-kuning"
+                                      : "text-tinta-3",
+                                )}
+                              >
+                                {p.stok} {p.satuan}
+                              </span>
+                            )}
+                          </p>
                         </div>
                       </div>
                     </Td>
 
-                    <Td kanan>
+                    <Td kanan className="hidden sm:table-cell">
                       <span className="angka text-[13.5px] font-bold text-tinta">
                         {rupiah(p.hargaJual)}
                       </span>
                     </Td>
 
-                    <Td kanan className="hidden sm:table-cell">
+                    <Td kanan className="hidden md:table-cell">
                       <span className="angka text-[13px] text-tinta-3">
                         {p.hargaModal > 0 ? rupiah(p.hargaModal) : "—"}
                       </span>
                     </Td>
 
-                    <Td kanan className="hidden md:table-cell">
+                    <Td kanan className="hidden lg:table-cell">
                       {p.hargaModal > 0 ? (
                         <span
                           className={cn(
@@ -408,7 +432,7 @@ export function ProdukKlien({
                       )}
                     </Td>
 
-                    <Td kanan>
+                    <Td kanan className="hidden sm:table-cell">
                       {!p.lacakStok ? (
                         <span className="text-[12px] text-tinta-4">tanpa stok</span>
                       ) : (
@@ -426,35 +450,39 @@ export function ProdukKlien({
                       )}
                     </Td>
 
+                    {/* Tombolnya muncul saat kursor lewat — di layar sentuh
+                        tidak ada "lewat", jadi di sana ia harus terlihat sejak
+                        awal. Kalau tidak, mengubah dan menghapus barang tidak
+                        bisa dilakukan sama sekali dari ponsel. */}
                     <Td>
-                      <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                      <div className="flex items-center justify-end gap-0.5 opacity-100 transition-opacity focus-within:opacity-100 lg:opacity-0 lg:group-hover:opacity-100">
                         <button
                           type="button"
                           onClick={() => bukaUbah(p)}
-                          className="flex size-7 items-center justify-center rounded-md text-tinta-3 hover:bg-kertas-2 hover:text-tinta"
+                          className="flex size-10 items-center justify-center rounded-md text-tinta-3 hover:bg-kertas-2 hover:text-tinta lg:size-7"
                           aria-label={`Ubah ${p.nama}`}
                           title="Ubah"
                         >
-                          <Ikon nama="pensil" size={14} />
+                          <Ikon nama="pensil" size={15} />
                         </button>
                         <button
                           type="button"
                           onClick={() => alihkanAktif(p)}
                           disabled={proses}
-                          className="flex size-7 items-center justify-center rounded-md text-tinta-3 hover:bg-kertas-2 hover:text-tinta"
+                          className="flex size-10 items-center justify-center rounded-md text-tinta-3 hover:bg-kertas-2 hover:text-tinta lg:size-7"
                           aria-label={p.aktif ? `Arsipkan ${p.nama}` : `Aktifkan ${p.nama}`}
                           title={p.aktif ? "Arsipkan" : "Aktifkan"}
                         >
-                          <Ikon nama={p.aktif ? "kotak" : "centang"} size={14} />
+                          <Ikon nama={p.aktif ? "kotak" : "centang"} size={15} />
                         </button>
                         <button
                           type="button"
                           onClick={() => setAkanHapus(p)}
-                          className="flex size-7 items-center justify-center rounded-md text-tinta-3 hover:bg-merah-muda hover:text-merah"
+                          className="flex size-10 items-center justify-center rounded-md text-tinta-3 hover:bg-merah-muda hover:text-merah lg:size-7"
                           aria-label={`Hapus ${p.nama}`}
                           title="Hapus"
                         >
-                          <Ikon nama="sampah" size={14} />
+                          <Ikon nama="sampah" size={15} />
                         </button>
                       </div>
                     </Td>

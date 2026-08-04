@@ -9,6 +9,21 @@ import { rupiah } from "@/lib/format";
 
 // ── Grafik batang harian ────────────────────────────────────────────────────
 
+/**
+ * Lebar terbesar satu batang, sebagai persen dari lebar grafik.
+ *
+ * Batas ATAS, bukan bawah. Sebelumnya di sini dipakai `minWidth` sebesar
+ * bagian masing-masing batang (100/n%). Dengan 30 batang, 30 × 3,33% sudah
+ * menghabiskan 100% sementara 29 celah 2px belum terhitung — barisnya melebihi
+ * induknya dan halaman laporan menggulir mendatar di ponsel. Sebagai `minWidth`
+ * angka itu juga tidak pernah bisa membatasi apa pun, karena `flex-1`
+ * melebarkan batangnya melewati batas bawah tanpa halangan.
+ *
+ * Sebagai batas atas, aturannya hanya berlaku ketika batangnya sedikit —
+ * mencegah tiga batang melar sepertiga layar masing-masing.
+ */
+const LEBAR_MAKS_BATANG = 12;
+
 export type TitikGrafik = {
   label: string;
   nilai: number;
@@ -32,7 +47,6 @@ export function GrafikBatang({
   tampilkanLabelKe?: number;
 }) {
   const maks = Math.max(1, ...data.map((d) => d.nilai));
-  const lebarBatang = 100 / Math.max(1, data.length);
 
   return (
     <div className={cn("w-full", className)}>
@@ -45,8 +59,8 @@ export function GrafikBatang({
           return (
             <div
               key={`${d.label}-${i}`}
-              className="group relative flex flex-1 flex-col justify-end"
-              style={{ minWidth: `${Math.min(lebarBatang, 12)}%`, height: "100%" }}
+              className="group relative flex min-w-0 flex-1 flex-col justify-end"
+              style={{ maxWidth: `${LEBAR_MAKS_BATANG}%`, height: "100%" }}
               title={d.judul ?? `${d.label}: ${formatNilai(d.nilai)}`}
             >
               <div
@@ -72,8 +86,8 @@ export function GrafikBatang({
         {data.map((d, i) => (
           <div
             key={`l-${d.label}-${i}`}
-            className="angka flex-1 text-center text-[10px] font-medium text-tinta-4"
-            style={{ minWidth: `${Math.min(lebarBatang, 12)}%` }}
+            className="angka min-w-0 flex-1 truncate text-center text-[10px] font-medium text-tinta-4"
+            style={{ maxWidth: `${LEBAR_MAKS_BATANG}%` }}
           >
             {i % tampilkanLabelKe === 0 || i === data.length - 1 ? d.label : ""}
           </div>

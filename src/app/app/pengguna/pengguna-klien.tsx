@@ -161,7 +161,7 @@ export function AksiPengguna({
           onClick={alih}
           disabled={proses}
           title={aktif ? "Nonaktifkan akun" : "Aktifkan akun"}
-          className="flex size-7 items-center justify-center rounded-md text-tinta-3 transition-colors hover:bg-kertas-2 hover:text-tinta"
+          className="flex size-10 items-center justify-center sm:size-7 rounded-md text-tinta-3 transition-colors hover:bg-kertas-2 hover:text-tinta"
         >
           <Ikon nama={aktif ? "kunci" : "centang"} size={14} />
         </button>
@@ -169,7 +169,7 @@ export function AksiPengguna({
           type="button"
           onClick={() => setAkanHapus(true)}
           title="Hapus akun"
-          className="flex size-7 items-center justify-center rounded-md text-tinta-3 transition-colors hover:bg-merah-muda hover:text-merah"
+          className="flex size-10 items-center justify-center sm:size-7 rounded-md text-tinta-3 transition-colors hover:bg-merah-muda hover:text-merah"
         >
           <Ikon nama="sampah" size={14} />
         </button>

@@ -96,7 +96,7 @@ export function DaftarBelanja({
           <button
             type="button"
             onClick={salinTeks}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-garis-2 bg-white px-2.5 text-[12.5px] font-bold text-tinta-2 transition-colors hover:bg-kertas-2"
+            className="inline-flex h-10 items-center gap-1.5 sm:h-8 rounded-lg border border-garis-2 bg-white px-2.5 text-[12.5px] font-bold text-tinta-2 transition-colors hover:bg-kertas-2"
           >
             <Ikon nama={tersalin ? "centang" : "salin"} size={13} />
             {tersalin ? "Tersalin" : "Salin daftar"}
@@ -104,7 +104,7 @@ export function DaftarBelanja({
           <button
             type="button"
             onClick={() => window.print()}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-garis-2 bg-white px-2.5 text-[12.5px] font-bold text-tinta-2 transition-colors hover:bg-kertas-2"
+            className="inline-flex h-10 items-center gap-1.5 sm:h-8 rounded-lg border border-garis-2 bg-white px-2.5 text-[12.5px] font-bold text-tinta-2 transition-colors hover:bg-kertas-2"
           >
             <Ikon nama="printer" size={13} />
             Cetak

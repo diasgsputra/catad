@@ -1248,6 +1248,49 @@ async function ujiPanelTarifEfektif() {
   periksa("rezim toko uji sudah dikembalikan", kembali?.rezimPajak === semula.rezimPajak);
 }
 
+// ── I. Tampilan ponsel ──────────────────────────────────────────────────────
+
+/**
+ * Penanda yang menjaga halaman tetap bisa dipakai dari ponsel.
+ *
+ * Uji asap hanya melihat markah, bukan tata letak sungguhan — lebar dan luberan
+ * diukur terpisah di peramban. Yang dijaga di sini adalah hal yang paling mudah
+ * hilang tanpa disadari saat halamannya disunting lagi: jalan menuju isi
+ * keranjang dari layar sentuh, dan tombol baris yang tidak boleh kembali
+ * bersembunyi di balik hover.
+ */
+async function ujiTampilanPonsel() {
+  bagian("I. Tampilan ponsel");
+
+  const pemilik = await cookieSesi("demo@catad.id");
+  if (!pemilik) {
+    periksa("sesi pemilik tersedia untuk menguji tampilan ponsel", false);
+    return;
+  }
+
+  const kasir = await (await ambil("/app/kasir", { headers: { cookie: pemilik } })).text();
+  periksa(
+    "kasir menyediakan jalan ke isi keranjang dari layar sentuh",
+    kasir.includes("data-keranjang-ponsel"),
+  );
+
+  // `opacity-0` tanpa awalan breakpoint berlaku di semua lebar, termasuk layar
+  // sentuh yang tidak punya "kursor lewat" untuk memunculkannya kembali.
+  // Lookbehind menyingkirkan bentuk yang sudah dibatasi seperti `lg:opacity-0`.
+  const sembunyiDiSemuaLebar = /(?<![\w:-])opacity-0(?![\w-])/;
+
+  for (const [jalur, apa] of [
+    ["/app/produk", "tombol baris barang"],
+    ["/app/stok", "tombol atur stok"],
+  ]) {
+    const isi = await (await ambil(jalur, { headers: { cookie: pemilik } })).text();
+    periksa(
+      `${apa} tidak bersembunyi di balik hover pada layar sentuh`,
+      !sembunyiDiSemuaLebar.test(isi),
+    );
+  }
+}
+
 // ── Jalankan ────────────────────────────────────────────────────────────────
 
 async function utama() {
@@ -1304,6 +1347,13 @@ async function utama() {
   } catch (galat) {
     gagal += 1;
     kegagalan.push(`Pengujian laporan pajak terhenti: ${galat.message}`);
+  }
+
+  try {
+    await ujiTampilanPonsel();
+  } catch (galat) {
+    gagal += 1;
+    kegagalan.push(`Pengujian tampilan ponsel terhenti: ${galat.message}`);
   }
 
   console.log("");

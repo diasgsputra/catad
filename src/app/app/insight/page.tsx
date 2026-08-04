@@ -226,11 +226,17 @@ export default async function HalamanInsight() {
           <Tabel>
             <thead>
               <tr>
+                {/* Enam kolom tidak muat di ponsel. Sisa dan laku/hari turun
+                    ke dalam sel nama; yang tersisa di layar sempit adalah dua
+                    hal yang menentukan tindakan: kapan habis, dan statusnya. */}
                 <Th>Barang</Th>
-                <Th kanan>Sisa</Th>
-                <Th kanan>Laku/hari</Th>
-                <Th kanan>Perkiraan habis</Th>
-                <Th kanan className="hidden sm:table-cell">Keandalan</Th>
+                <Th kanan className="hidden md:table-cell">Sisa</Th>
+                <Th kanan className="hidden md:table-cell">Laku/hari</Th>
+                <Th kanan>
+                  <span className="sm:hidden">Habis</span>
+                  <span className="hidden sm:inline">Perkiraan habis</span>
+                </Th>
+                <Th kanan className="hidden lg:table-cell">Keandalan</Th>
                 <Th kanan>Status</Th>
               </tr>
             </thead>
@@ -243,8 +249,16 @@ export default async function HalamanInsight() {
                       <p className="truncate text-[13.5px] font-semibold text-tinta">
                         {p.produk.nama}
                       </p>
+                      <p className="angka mt-0.5 text-[11.5px] text-tinta-3 md:hidden">
+                        <span className={cn(p.produk.stok <= 0 && "font-bold text-merah")}>
+                          sisa {p.produk.stok} {p.produk.satuan}
+                        </span>
+                        {p.perHari > 0 && (
+                          <> · {p.perHari.toFixed(1).replace(".", ",")}/hari</>
+                        )}
+                      </p>
                     </Td>
-                    <Td kanan>
+                    <Td kanan className="hidden md:table-cell">
                       <span
                         className={cn(
                           "angka text-[13.5px] font-bold",
@@ -257,14 +271,17 @@ export default async function HalamanInsight() {
                         </span>
                       </span>
                     </Td>
-                    <Td kanan>
+                    <Td kanan className="hidden md:table-cell">
                       <span className="angka text-[13px] text-tinta-2">
                         {p.perHari > 0 ? p.perHari.toFixed(1).replace(".", ",") : "—"}
                       </span>
                     </Td>
                     <Td kanan>
                       {p.hariTersisa === null ? (
-                        <span className="text-[12.5px] text-tinta-4">belum bisa dihitung</span>
+                        <span className="text-[12.5px] text-tinta-4">
+                          <span className="sm:hidden">—</span>
+                          <span className="hidden sm:inline">belum bisa dihitung</span>
+                        </span>
                       ) : (
                         <span
                           className={cn(
@@ -276,7 +293,7 @@ export default async function HalamanInsight() {
                         </span>
                       )}
                     </Td>
-                    <Td kanan className="hidden sm:table-cell">
+                    <Td kanan className="hidden lg:table-cell">
                       <span
                         className={cn(
                           "text-[11.5px] font-semibold",

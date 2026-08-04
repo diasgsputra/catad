@@ -221,9 +221,9 @@ export default async function HalamanLaporan({
               <thead>
                 <tr>
                   <Th>Barang</Th>
-                  <Th kanan>Terjual</Th>
+                  <Th kanan className="hidden sm:table-cell">Terjual</Th>
                   <Th kanan>Pendapatan</Th>
-                  <Th kanan className="hidden sm:table-cell">Laba</Th>
+                  <Th kanan className="hidden md:table-cell">Laba</Th>
                 </tr>
               </thead>
               <tbody>
@@ -241,12 +241,17 @@ export default async function HalamanLaporan({
                         >
                           {i + 1}
                         </span>
-                        <span className="truncate text-[13.5px] font-semibold text-tinta">
-                          {p.nama}
-                        </span>
+                        <div className="min-w-0">
+                          <span className="block truncate text-[13.5px] font-semibold text-tinta">
+                            {p.nama}
+                          </span>
+                          <span className="angka mt-0.5 block text-[11.5px] text-tinta-3 sm:hidden">
+                            {p.qty} {p.satuan} terjual
+                          </span>
+                        </div>
                       </div>
                     </Td>
-                    <Td kanan>
+                    <Td kanan className="hidden sm:table-cell">
                       <span className="angka text-[13.5px] font-bold text-tinta">
                         {p.qty}
                         <span className="ml-0.5 text-[11px] font-medium text-tinta-4">
@@ -257,7 +262,7 @@ export default async function HalamanLaporan({
                     <Td kanan>
                       <span className="angka text-[13px] text-tinta-2">{rupiah(p.pendapatan)}</span>
                     </Td>
-                    <Td kanan className="hidden sm:table-cell">
+                    <Td kanan className="hidden md:table-cell">
                       <span
                         className={cn(
                           "angka text-[13px] font-semibold",

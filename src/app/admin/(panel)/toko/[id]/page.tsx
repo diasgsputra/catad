@@ -111,7 +111,7 @@ export default async function HalamanDetailToko({
     <div>
       <Link
         href="/admin/toko"
-        className="mb-2 inline-flex items-center gap-1 text-[12.5px] font-bold text-tinta-3 hover:text-tinta"
+        className="mb-2 inline-flex min-h-10 items-center gap-1 text-[12.5px] sm:min-h-0 font-bold text-tinta-3 hover:text-tinta"
       >
         <Ikon nama="kiri" size={12} />
         Daftar toko
