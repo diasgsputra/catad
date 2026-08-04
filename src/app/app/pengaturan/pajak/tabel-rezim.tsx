@@ -18,11 +18,16 @@ export function TabelRezim({ sorot }: { sorot: RezimPajak }) {
   return (
     <Tabel>
       <thead>
+        {/* Lebar dipatok di kepala kolom, bukan lewat <colgroup>: kolom yang
+            disembunyikan di layar sempit memakai `hidden` pada selnya, dan
+            <col> tidak bisa ikut disembunyikan dengan cara yang sama. Tanpa
+            patokan ini "Omzet × norma, lalu Pasal 17" pecah dua baris
+            sementara kolom sebelahnya menganggur. */}
         <tr>
-          <Th>Pilihan</Th>
-          <Th>Dasar hitung</Th>
-          <Th className="hidden md:table-cell">Untuk</Th>
-          <Th className="hidden lg:table-cell">Sumber</Th>
+          <Th className="w-[30%]">Pilihan</Th>
+          <Th className="w-[22%]">Dasar hitung</Th>
+          <Th className="hidden w-[26%] md:table-cell">Untuk</Th>
+          <Th className="hidden w-[22%] lg:table-cell">Sumber</Th>
         </tr>
       </thead>
       <tbody>
@@ -31,7 +36,7 @@ export function TabelRezim({ sorot }: { sorot: RezimPajak }) {
 
           return (
             <tr key={r.rezim} className={cn(aktif && "bg-merek-muda/40")}>
-              <Td>
+              <Td className="py-2.5">
                 <span className="flex flex-wrap items-center gap-1.5">
                   <span
                     className={cn(
@@ -53,14 +58,14 @@ export function TabelRezim({ sorot }: { sorot: RezimPajak }) {
                   {r.sumber !== "—" && ` · ${r.sumber}`}
                 </span>
               </Td>
-              <Td>
+              <Td className="py-2.5">
                 <span className="text-[12.5px] leading-snug text-tinta-2">{r.dasarHitung}</span>
               </Td>
-              <Td className="hidden md:table-cell">
+              <Td className="hidden py-2.5 md:table-cell">
                 <span className="text-[12.5px] leading-snug text-tinta-3">{r.untuk}</span>
               </Td>
-              <Td className="hidden lg:table-cell">
-                <span className="text-[11.5px] leading-snug text-tinta-3">{r.sumber}</span>
+              <Td className="hidden py-2.5 lg:table-cell">
+                <span className="text-[11.5px] leading-snug text-tinta-4">{r.sumber}</span>
               </Td>
             </tr>
           );

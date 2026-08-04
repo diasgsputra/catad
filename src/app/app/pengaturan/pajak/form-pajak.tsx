@@ -10,6 +10,7 @@ import {
   Pilih,
   Tombol,
 } from "@/components/ui";
+import { Ikon } from "@/components/ikon";
 import { simpanPengaturanPajak } from "@/actions/toko";
 import type { HasilAksi } from "@/actions/produk";
 import {
@@ -89,26 +90,34 @@ export function FormPajak({
       <Kartu className="overflow-hidden">
         <KepalaKartu
           ikon="info"
-          judul="Lima dasar perhitungan yang dikenal ketentuan pajak"
-          keterangan="Bacaan rujukan untuk memilih. Baris yang disorot adalah pilihan Anda sekarang."
+          judul="Lima dasar perhitungan"
+          keterangan="Baris yang disorot adalah pilihan Anda sekarang."
         />
         <TabelRezim sorot={rezim} />
-        <div className="space-y-2 border-t border-garis px-4 py-3">
-          <p className="text-[11.5px] leading-relaxed text-tinta-3">
-            Angka pada tabel adalah ketentuan umum yang berlaku sekarang. Yang benar-benar dipakai
-            laporan Anda adalah nilai pada formulir di bawah, sehingga tarif yang berbeda tetap
-            bisa diisi bila aturannya berubah.
-          </p>
-          <p className="text-[11.5px] leading-relaxed text-tinta-3">
-            Di luar skema final, pajak setahun umumnya masih dicicil lewat angsuran PPh Pasal 25
-            tiap bulan. Catad tidak menghitungnya karena besarannya mengacu pada SPT tahun
-            sebelumnya, bukan pada penjualan tahun berjalan.
-          </p>
-          <p className="text-[11.5px] leading-relaxed text-tinta-3">
-            PPN juga tidak dihitung: menentukan PPN terutang memerlukan pajak masukan dari faktur
-            pembelian, dan Catad tidak mencatatnya.
-          </p>
-        </div>
+
+        {/* Ketiganya wajib disampaikan, tetapi tidak wajib dibaca setiap kali
+            halaman dibuka. Ditutup secara bawaan supaya rujukannya tetap
+            ringkas; yang butuh tinggal membukanya. */}
+        <details className="group border-t border-garis">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 px-4 py-2.5 text-[12px] font-bold text-tinta-2 hover:bg-kertas/60">
+            <span className="text-tinta-4 transition-transform group-open:rotate-90">
+              <Ikon nama="kanan" size={11} />
+            </span>
+            Batas dari angka di atas
+          </summary>
+          <ul className="space-y-2 px-4 pb-3.5 pl-9">
+            {[
+              "Angka pada tabel adalah ketentuan umum yang berlaku sekarang. Yang dipakai laporan Anda adalah nilai pada formulir di bawah.",
+              "Angsuran PPh Pasal 25 tidak dihitung. Di luar skema final, pajak setahun umumnya masih dicicil bulanan mengacu pada SPT tahun sebelumnya.",
+              "PPN tidak dihitung. Menentukannya memerlukan pajak masukan dari faktur pembelian, dan Catad tidak mencatatnya.",
+            ].map((b) => (
+              <li key={b} className="flex gap-2 text-[11.5px] leading-relaxed text-tinta-3">
+                <span className="mt-1.5 size-1 shrink-0 rounded-full bg-tinta-4" />
+                {b}
+              </li>
+            ))}
+          </ul>
+        </details>
       </Kartu>
 
       <form action={kirim} className="space-y-5">
@@ -118,11 +127,7 @@ export function FormPajak({
         )}
 
         <Kartu>
-          <KepalaKartu
-            ikon="grafik"
-            judul="Dasar perhitungan"
-            keterangan="Menentukan bagaimana laporan pajak menghitung angkanya."
-          />
+          <KepalaKartu ikon="grafik" judul="Dasar perhitungan" />
           <div className="space-y-4 p-4">
             <Bidang label="Cara menghitung pajak" htmlFor="rezimPajak">
               <Pilih
@@ -324,7 +329,7 @@ export function FormPajak({
           <KepalaKartu
             ikon="nota"
             judul="Identitas pajak"
-            keterangan="Muncul di kepala dokumen laporan. Boleh dikosongkan — data ini tidak pernah dikirim ke mana pun."
+            keterangan="Muncul di kepala dokumen laporan. Boleh dikosongkan."
           />
           <div className="space-y-4 p-4">
             <div className="grid gap-4 sm:grid-cols-2">

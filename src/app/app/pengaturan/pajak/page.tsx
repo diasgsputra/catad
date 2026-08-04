@@ -37,13 +37,12 @@ export default async function HalamanPengaturanPajak() {
       <h1 className="text-[22px] leading-tight font-extrabold tracking-[-0.02em] text-tinta">
         Pengaturan pajak
       </h1>
-      <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-tinta-3">
+      <p className="mt-1 text-[13px] text-tinta-3">
         Menentukan bagaimana{" "}
         <Link href="/app/pajak" className="font-bold text-merek hover:underline">
           laporan pajak
         </Link>{" "}
-        menghitung angkanya. Pilih yang sesuai dengan keadaan usaha Anda — bila ragu, tanyakan ke
-        konsultan pajak.
+        menghitung angkanya. Bila ragu, tanyakan ke konsultan pajak.
       </p>
 
       <FormPajak
@@ -64,10 +63,8 @@ export default async function HalamanPengaturanPajak() {
       />
 
       <Peringatan nada="info" className="mt-5" judul="Bukan nasihat perpajakan">
-        Catad menyusun kertas kerja dari catatan penjualan Anda, bukan formulir SPT. Pilihan di
-        halaman ini menentukan rumus yang dipakai — memilih yang tidak sesuai menghasilkan angka
-        yang salah, dan angka pajak yang salah lebih berbahaya daripada tidak ada angka sama
-        sekali.
+        Catad menyusun kertas kerja, bukan formulir SPT. Pilihan di halaman ini menentukan rumus
+        yang dipakai — yang tidak sesuai menghasilkan angka yang salah.
       </Peringatan>
     </div>
   );

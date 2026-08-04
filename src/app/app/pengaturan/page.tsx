@@ -111,23 +111,25 @@ export default async function HalamanPengaturan() {
             <Kartu>
               <KepalaKartu ikon="nota" judul="Pengaturan pajak" />
               <div className="p-4">
+                {/* Susunannya sengaja sama dengan kartu langganan di atasnya —
+                    label kecil, nilai tebal, lalu satu tombol utama. Kolom ini
+                    berisi empat kartu berturut-turut; kalau tiap kartu memakai
+                    bentuk sendiri, matanya tidak punya pegangan. */}
                 <p className="text-[11px] font-bold tracking-[0.08em] text-tinta-3 uppercase">
                   Dasar perhitungan
                 </p>
-                <p className="mt-1 text-[14px] font-bold text-tinta">
-                  {LABEL_REZIM[k.toko.rezimPajak]}
-                </p>
-                <p className="mt-2 text-[12.5px] leading-relaxed text-tinta-2">
-                  {k.toko.npwp
-                    ? `NPWP ${k.toko.npwp} tercatat.`
-                    : "NPWP belum diisi, sehingga kepala dokumen laporan ditulis “belum diisi”."}
-                </p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <span className="text-[15px] leading-snug font-bold text-tinta">
+                    {LABEL_REZIM[k.toko.rezimPajak]}
+                  </span>
+                  {!k.toko.npwp && <Lencana nada="kuning">NPWP kosong</Lencana>}
+                </div>
 
                 <Link
                   href="/app/pengaturan/pajak"
-                  className="mt-3.5 inline-flex h-9 items-center gap-1.5 rounded-lg border border-garis-2 px-3.5 text-[13px] font-bold text-tinta transition-colors hover:bg-kertas-2"
+                  className="mt-3.5 inline-flex h-9 items-center gap-1.5 rounded-lg bg-merek px-3.5 text-[13px] font-bold text-white transition-colors hover:bg-merek-tua"
                 >
-                  Atur dasar perhitungan
+                  Buka pengaturan pajak
                   <Ikon nama="kanan" size={13} />
                 </Link>
               </div>
