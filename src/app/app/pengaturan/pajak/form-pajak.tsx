@@ -17,6 +17,8 @@ import {
   KETERANGAN_REZIM,
   LABEL_REZIM,
   PILIHAN_PTKP,
+  persenDariBps,
+  tarifEfektif31E,
   type RezimPajak,
 } from "@/lib/pajak";
 import { TabelRezim } from "./tabel-rezim";
@@ -70,6 +72,12 @@ export function FormPajak({
   const [keadaan, kirim, menunggu] = useActionState(simpanPengaturanPajak, AWAL);
   const [rezim, setRezim] = useState<RezimPajak>(nilai.rezimPajak);
   const [jenisWp, setJenisWp] = useState(nilai.jenisWajibPajak);
+
+  // Kedua nilai ini dilacak hanya untuk menampilkan tarif efektifnya. Kolomnya
+  // tetap tak terkendali (defaultValue), jadi pengiriman formulirnya tidak
+  // berubah — yang berubah cuma kalimat di sebelahnya.
+  const [tarifBadanBps, setTarifBadanBps] = useState(nilai.tarifBadanBps);
+  const [pakai31E, setPakai31E] = useState(nilai.pakai31E);
 
   const galat = keadaan.galat;
   const pakaiFinal = rezim === "FINAL_UMKM";
@@ -151,9 +159,9 @@ export function FormPajak({
 
             {badanPakaiFinal && (
               <Peringatan nada="waspada" judul="Periksa lagi pilihan ini">
-                Jenis wajib pajaknya diisi Badan, tetapi skema PPh Final UMKM sejak PP 20/2026
-                hanya terbuka untuk orang pribadi dan Perseroan Perorangan. Fasilitas peredaran
-                bruto bebas PPh juga tidak berlaku bagi badan.
+                Jenis wajib pajaknya diisi Badan usaha, tetapi skema PPh Final UMKM sejak PP
+                20/2026 hanya terbuka untuk orang pribadi dan Perseroan Perorangan. Fasilitas
+                peredaran bruto bebas PPh juga tidak berlaku bagi badan usaha.
               </Peringatan>
             )}
 
@@ -196,7 +204,7 @@ export function FormPajak({
                   label="Peredaran bruto bebas PPh setahun"
                   htmlFor="fasilitasBebas"
                   galat={galat?.fasilitasBebas}
-                  petunjuk="Rp500.000.000 untuk orang pribadi. Isi 0 untuk badan."
+                  petunjuk="Rp500.000.000 untuk orang pribadi. Isi 0 untuk badan usaha."
                 >
                   <Kolom
                     id="fasilitasBebas"
@@ -277,6 +285,9 @@ export function FormPajak({
                     min={0}
                     max={50}
                     defaultValue={nilai.tarifBadanBps / 100}
+                    onChange={(e) =>
+                      setTarifBadanBps(Math.round((Number(e.target.value) || 0) * 100))
+                    }
                     galat={galat?.tarifBadanPersen}
                     disabled={!bolehUbah}
                     className="angka"
@@ -288,6 +299,7 @@ export function FormPajak({
                     type="checkbox"
                     name="pakai31E"
                     defaultChecked={nilai.pakai31E}
+                    onChange={(e) => setPakai31E(e.target.checked)}
                     disabled={!bolehUbah}
                     className="mt-0.5 size-4 shrink-0 rounded border-garis-2 accent-merek"
                   />
@@ -296,12 +308,42 @@ export function FormPajak({
                       Pakai fasilitas Pasal 31E
                     </span>
                     <span className="block text-[11.5px] leading-relaxed text-tinta-3">
-                      Pengurangan tarif 50% atas penghasilan kena pajak dari bagian peredaran
-                      bruto sampai Rp4,8 miliar. Berlaku untuk badan dengan peredaran bruto sampai
-                      Rp50 miliar.
+                      Tarifnya dipotong setengah atas penghasilan kena pajak yang berasal dari
+                      peredaran bruto sampai Rp4,8 miliar. Berlaku untuk badan usaha dengan
+                      peredaran bruto sampai Rp50 miliar.
                     </span>
                   </span>
                 </label>
+
+                {/* Angka jadinya disebutkan, bukan cuma "potongan 50%".
+                    "Tarifnya 22%, dipotong 50%" menuntut pembacanya berhitung
+                    sendiri; "menjadi 11%" langsung terbaca. */}
+                <div className="rounded-lg bg-kertas-2 px-3 py-2.5">
+                  <p className="text-[12px] font-bold text-tinta">
+                    {pakai31E ? (
+                      <>
+                        Tarif efektif{" "}
+                        <span className="angka text-merek-tua">
+                          {persenDariBps(tarifEfektif31E(tarifBadanBps))}
+                        </span>{" "}
+                        <span className="font-semibold text-tinta-3">
+                          (dari {persenDariBps(tarifBadanBps)})
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        Tarif efektif{" "}
+                        <span className="angka text-tinta">{persenDariBps(tarifBadanBps)}</span>{" "}
+                        <span className="font-semibold text-tinta-3">tanpa Pasal 31E</span>
+                      </>
+                    )}
+                  </p>
+                  <p className="mt-0.5 text-[11.5px] leading-relaxed text-tinta-3">
+                    {pakai31E
+                      ? "Berlaku penuh selama peredaran bruto setahun tidak melampaui Rp4,8 miliar. Di atas itu hanya sebagian penghasilan yang mendapat potongan, sehingga tarif rata-ratanya naik."
+                      : "Seluruh penghasilan kena pajak dikenai tarif penuh."}
+                  </p>
+                </div>
               </div>
             )}
 
@@ -363,7 +405,7 @@ export function FormPajak({
                   disabled={!bolehUbah}
                 >
                   <option value="ORANG_PRIBADI">Orang Pribadi</option>
-                  <option value="BADAN">Badan (PT / CV / koperasi)</option>
+                  <option value="BADAN">Badan Usaha (PT / CV / koperasi)</option>
                 </Pilih>
               </Bidang>
             </div>

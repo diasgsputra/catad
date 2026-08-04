@@ -16,6 +16,7 @@ import {
   pphBadan,
   pphPasal17,
   ringkasLabaRugi,
+  tarifEfektif31E,
   type KonfigurasiPajak,
 } from "@/lib/pajak";
 
@@ -315,6 +316,45 @@ describe("rezim PEMBUKUAN_BADAN", () => {
       labaBersih: 300 * JT,
     });
     expect(h.pajakTerutang).toBe(66 * JT);
+  });
+
+  it("menyebutkan tarif efektifnya sebagai angka, bukan cuma potongan 50%", () => {
+    // "22% dipotong 50%" menuntut pembacanya berhitung sendiri. Angka jadinya
+    // harus muncul, dan harus sama dengan yang benar-benar dipakai menghitung.
+    const h = hitungPajak({
+      omzetBulanan: Array(12).fill(250 * JT), // 3 miliar, di bawah 4,8 miliar
+      konfigurasi: konfig({ rezim: "PEMBUKUAN_BADAN", tarifBadanBps: 2200, pakai31E: true }),
+      tahun: 2026,
+      labaBersih: 300 * JT,
+    });
+
+    const hasil = h.langkah.find((l) => l.hasil);
+    expect(hasil?.rumus).toContain("11%");
+    expect(catatanPajak(h).join(" ")).toContain("11%");
+    // 11% × 300jt = 33jt — angka yang disebut memang angka yang dipakai.
+    expect(h.pajakTerutang).toBe(33 * JT);
+  });
+
+  it("tidak menyebut satu tarif efektif ketika hanya sebagian yang dapat potongan", () => {
+    // Di atas Rp4,8 miliar tarif rata-ratanya ada di antara 11% dan 22%;
+    // menyebut satu angka justru menyesatkan.
+    const h = hitungPajak({
+      omzetBulanan: Array(12).fill(1000 * JT), // 12 miliar
+      konfigurasi: konfig({ rezim: "PEMBUKUAN_BADAN", tarifBadanBps: 2200, pakai31E: true }),
+      tahun: 2026,
+      labaBersih: 1000 * JT,
+    });
+
+    const hasil = h.langkah.find((l) => l.hasil);
+    expect(hasil?.rumus).not.toContain("efektif");
+    expect(hasil?.rumus).toContain("Rp4,8 miliar");
+  });
+
+  it("tarif efektif mengikuti tarif yang diatur, bukan angka tetap", () => {
+    expect(tarifEfektif31E(2200)).toBe(1100);
+    expect(tarifEfektif31E(2500)).toBe(1250);
+    expect(persenDariBps(tarifEfektif31E(2200))).toBe("11%");
+    expect(persenDariBps(tarifEfektif31E(2500))).toBe("12,5%");
   });
 
   it("tidak memakai PTKP", () => {

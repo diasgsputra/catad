@@ -294,13 +294,22 @@ toko dan salah pilih menghasilkan angka yang salah.
 | **PPh Final UMKM** | Peredaran bruto | Tarif (bawaan 0,5%), fasilitas bebas (bawaan Rp500 juta) | PP 23/2018 → PP 55/2022 → PP 20/2026 |
 | **Norma (NPPN)** | Peredaran bruto × norma, lalu Pasal 17 | Persentase norma, PTKP | UU PPh Pasal 14 · PER-17/PJ/2015 |
 | **Pembukuan — orang pribadi** | Laba bersih − PTKP, lalu Pasal 17 | PTKP | UU PPh Pasal 16 & 17 · UU HPP |
-| **Pembukuan — badan** | Laba bersih, tarif PPh badan | Tarif (bawaan 22%), fasilitas Pasal 31E | UU PPh Pasal 17 ayat (1) huruf b & Pasal 31E |
+| **Pembukuan — badan usaha** | Laba bersih, tarif PPh badan | Tarif (bawaan 22%), fasilitas Pasal 31E | UU PPh Pasal 17 ayat (1) huruf b & Pasal 31E |
 | **Rekap saja** | — | Catad hanya menyusun rekap; pajak dihitung di luar | — |
 
 Tabel itu satu sumber, `RINGKASAN_REZIM` di `src/lib/pajak.ts` — berkas yang
 sama dengan yang menghitung angkanya, supaya keterangan di layar tidak bisa
 menyimpang dari mesinnya. Ada uji unit yang menjaga dasar hukumnya tidak
 tertukar antar rezim.
+
+Dua keputusan penyampaian yang disengaja. **"Badan" tidak pernah berdiri
+sendiri** — istilah resminya benar, tetapi bagi pemilik warung "badan" ambigu,
+jadi ditulis "badan usaha". **Fasilitas Pasal 31E disebut sebagai tarif
+jadinya**, bukan sebagai potongan: "tarif efektif 11%", bukan "pengurangan
+50%". `tarifEfektif31E()` dipakai bersama oleh yang menghitung dan yang
+menampilkan, sehingga angka yang dibaca tidak bisa berbeda dari angka yang
+dipakai. Di atas Rp4,8 miliar hanya sebagian penghasilan yang mendapat
+potongan, jadi di sana satu angka efektif sengaja tidak disebutkan.
 
 Yang tetap dipaku di kode hanya yang ditetapkan undang-undang dan berlaku
 seragam: lapisan tarif Pasal 17 (5/15/25/30/35% menurut UU HPP), ambang Rp4,8

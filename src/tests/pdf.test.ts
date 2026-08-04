@@ -29,11 +29,21 @@ describe("sandikanTeks", () => {
     expect(sandikanTeks("Peredaran bruto Rp1.250.000")).toBe("Peredaran bruto Rp1.250.000");
   });
 
-  it("mengganti aksara di luar Latin-1 dengan tanda tanya", () => {
-    // Font bawaan PDF tidak punya glyph-nya; lebih baik terlihat sebagai tanda
-    // tanya daripada menghasilkan berkas rusak.
-    expect(sandikanTeks("naik 5% → 6%")).toBe("naik 5% ? 6%");
+  it("mengalihaksarakan tanda baca tipografi ke padanan Latin-1", () => {
+    // Tanpa ini "Pembukuan — badan usaha" tercetak "Pembukuan ? badan usaha".
+    // Aksaranya sah di layar tetapi tidak ada di WinAnsiEncoding, dan tanda
+    // tanya di tengah kalimat membuat dokumen terlihat rusak.
+    expect(sandikanTeks("Pembukuan — badan usaha")).toBe("Pembukuan - badan usaha");
+    expect(sandikanTeks("Laba − PTKP")).toBe("Laba - PTKP");
+    expect(sandikanTeks("naik 5% → 6%")).toBe("naik 5% -> 6%");
+    expect(sandikanTeks("“dikutip”")).toBe('"dikutip"');
+    expect(sandikanTeks("sisanya…")).toBe("sisanya...");
+  });
+
+  it("tetap mengganti aksara yang benar-benar tidak punya padanan", () => {
+    // Lebih baik terlihat sebagai tanda tanya daripada berkas rusak.
     expect(sandikanTeks("emoji \u{1F600}")).toContain("?");
+    expect(sandikanTeks("aksara 中")).toBe("aksara ?");
   });
 
   it("mengubah aksara kendali menjadi spasi", () => {
@@ -45,6 +55,14 @@ describe("lebarCourier", () => {
   it("lebarnya tetap 0,6 kali ukuran font per aksara", () => {
     expect(lebarCourier("12345", 10)).toBeCloseTo(30);
     expect(lebarCourier("", 10)).toBe(0);
+  });
+
+  it("mengukur setelah alih aksara, bukan sebelumnya", () => {
+    // Satu elipsis menjadi tiga titik. Kolom rata kanan yang diukur pada teks
+    // aslinya akan meleset selebar dua aksara.
+    expect(lebarCourier("…", 10)).toBeCloseTo(lebarCourier("...", 10));
+    // Tanda pisah tetap satu aksara.
+    expect(lebarCourier("—", 10)).toBeCloseTo(lebarCourier("-", 10));
   });
 });
 

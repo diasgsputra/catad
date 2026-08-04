@@ -38,17 +38,44 @@ const KODE_FONT: Record<NamaFont, string> = {
 const LEBAR_COURIER = 0.6;
 
 /**
+ * Aksara tipografi yang punya padanan Latin-1.
+ *
+ * Tanpa tabel ini, tanda pisah pada "Pembukuan — badan usaha" tercetak sebagai
+ * "Pembukuan ? badan usaha" di dalam PDF. Aksaranya sah di layar tetapi tidak
+ * ada di WinAnsiEncoding, dan tanda tanya di tengah kalimat membuat dokumen
+ * yang seharusnya siap dilampirkan terlihat rusak.
+ */
+const PADANAN_LATIN1: Record<string, string> = {
+  "—": "-", // — tanda pisah em
+  "–": "-", // – tanda pisah en
+  "−": "-", // − tanda minus matematis
+  "‘": "'", // ' petik tunggal buka
+  "’": "'", // ' petik tunggal tutup
+  "“": '"', // " petik ganda buka
+  "”": '"', // " petik ganda tutup
+  "…": "...", // … elipsis
+  " ": " ", // spasi tanpa pemisah
+  "→": "->", // → panah
+};
+
+/**
  * Menyandikan teks untuk dimuat di dalam literal string PDF.
  *
  * Kurung buka, kurung tutup, dan garis miring terbalik punya arti khusus di
- * dalam literal PDF sehingga harus dilarikan. Aksara di luar Latin-1 diganti
- * tanda tanya: font bawaan PDF memakai WinAnsiEncoding dan tidak punya
- * glyph-nya, dan aksara tak dikenal lebih baik terlihat sebagai tanda tanya
+ * dalam literal PDF sehingga harus dilarikan. Aksara tipografi yang punya
+ * padanan Latin-1 diganti padanannya; sisanya, yang benar-benar tidak punya
+ * glyph pada WinAnsiEncoding, diganti tanda tanya — lebih baik terlihat
  * daripada merusak seluruh berkas.
  */
+function transliterasi(teks: string): string {
+  let hasil = "";
+  for (const aksara of teks) hasil += PADANAN_LATIN1[aksara] ?? aksara;
+  return hasil;
+}
+
 export function sandikanTeks(teks: string): string {
   let hasil = "";
-  for (const aksara of teks) {
+  for (const aksara of transliterasi(teks)) {
     const kode = aksara.codePointAt(0) ?? 63;
     if (aksara === "\\") hasil += "\\\\";
     else if (aksara === "(") hasil += "\\(";
@@ -60,9 +87,15 @@ export function sandikanTeks(teks: string): string {
   return hasil;
 }
 
-/** Lebar teks Courier dalam poin. Hanya sahih untuk font berlebar tetap. */
+/**
+ * Lebar teks Courier dalam poin. Hanya sahih untuk font berlebar tetap.
+ *
+ * Diukur setelah transliterasi, bukan pada teks aslinya: satu elipsis menjadi
+ * tiga titik, dan kolom rata kanan yang diukur sebelum penggantian akan meleset
+ * selebar dua aksara.
+ */
 export function lebarCourier(teks: string, ukuran: number): number {
-  return teks.length * LEBAR_COURIER * ukuran;
+  return [...transliterasi(teks)].length * LEBAR_COURIER * ukuran;
 }
 
 export type OpsiTeks = {

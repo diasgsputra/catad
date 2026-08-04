@@ -1106,7 +1106,8 @@ async function ujiPengaturanPajak({ pro, gratis, kasir }) {
     "PPh Final UMKM",
     "Norma Penghitungan Penghasilan Neto",
     "Pembukuan — orang pribadi",
-    "Pembukuan — badan",
+    // "badan" berdiri sendiri ambigu bagi orang awam — badan apa?
+    "Pembukuan — badan usaha",
     "Rekap saja, tanpa hitung pajak",
   ];
 
@@ -1137,7 +1138,21 @@ async function ujiPengaturanPajak({ pro, gratis, kasir }) {
       "angsuran PPh Pasal 25 yang tidak dihitung disebutkan",
       /Pasal 25/.test(isi),
     );
+    // Fasilitas Pasal 31E disebut sebagai angka jadinya, bukan cuma "potongan
+    // 50%" yang menuntut pembacanya berhitung sendiri.
+    periksa(
+      "tabel rujukan menyebut tarif 11% dengan Pasal 31E",
+      isi.includes("11% dengan Pasal 31E"),
+    );
+    periksa(
+      'pilihan jenis wajib pajak menyebut "Badan Usaha"',
+      isi.includes("Badan Usaha (PT / CV / koperasi)"),
+    );
   }
+
+  // Panel tarif efektif hanya muncul saat rezimnya pembukuan badan usaha,
+  // jadi rezim toko uji ditukar sebentar lalu dikembalikan.
+  await ujiPanelTarifEfektif();
 
   // Bukan fitur Pro: memilih dasar perhitungan harus bisa dilakukan sebelum
   // berlangganan, kalau tidak laporannya salah sejak unduhan pertama.
@@ -1179,6 +1194,58 @@ async function ujiPengaturanPajak({ pro, gratis, kasir }) {
       periksa(`kolom ${kolom} sudah pindah dari pengaturan biasa`, !ada);
     }
   }
+}
+
+/**
+ * Panel tarif efektif Pasal 31E.
+ *
+ * Isian PPh badan hanya dirender ketika rezim tersimpannya pembukuan badan
+ * usaha, jadi rezim satu toko ditukar sebentar. Dikembalikan di `finally` dan
+ * hasil pengembaliannya ikut diperiksa — uji yang meninggalkan data berubah
+ * akan membuat uji berikutnya gagal tanpa sebab yang jelas.
+ */
+async function ujiPanelTarifEfektif() {
+  const pemilik = await db.pengguna.findFirst({
+    where: { peran: "PEMILIK" },
+    select: { email: true, tokoId: true },
+    orderBy: { dibuatPada: "asc" },
+  });
+  if (!pemilik) return;
+
+  const semula = await db.toko.findUnique({
+    where: { id: pemilik.tokoId },
+    select: { rezimPajak: true, tarifBadanBps: true, pakai31E: true },
+  });
+  if (!semula) return;
+
+  const cookie = await cookieSesi(pemilik.email);
+  if (!cookie) return;
+
+  try {
+    await db.toko.update({
+      where: { id: pemilik.tokoId },
+      data: { rezimPajak: "PEMBUKUAN_BADAN", tarifBadanBps: 2200, pakai31E: true },
+    });
+
+    const isi = await (
+      await ambil("/app/pengaturan/pajak", { headers: { cookie } })
+    ).text();
+
+    periksa("isian PPh badan usaha muncul pada rezimnya", /name="tarifBadanPersen"/.test(isi));
+    periksa(
+      "fasilitas Pasal 31E disebut sebagai tarif efektif, bukan cuma potongan 50%",
+      /Tarif efektif/i.test(isi) && isi.includes("11%"),
+    );
+    periksa("tarif asalnya ikut disebut supaya asal angkanya terlihat", isi.includes("22%"));
+  } finally {
+    await db.toko.update({ where: { id: pemilik.tokoId }, data: semula });
+  }
+
+  const kembali = await db.toko.findUnique({
+    where: { id: pemilik.tokoId },
+    select: { rezimPajak: true },
+  });
+  periksa("rezim toko uji sudah dikembalikan", kembali?.rezimPajak === semula.rezimPajak);
 }
 
 // ── Jalankan ────────────────────────────────────────────────────────────────

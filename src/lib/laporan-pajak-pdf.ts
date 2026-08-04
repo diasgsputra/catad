@@ -158,7 +158,7 @@ function blokIdentitas(k: Kanvas, identitas: IdentitasPajak) {
   barisIdentitas(
     k,
     "Jenis wajib pajak",
-    identitas.jenisWajibPajak === "ORANG_PRIBADI" ? "Orang Pribadi" : "Badan",
+    identitas.jenisWajibPajak === "ORANG_PRIBADI" ? "Orang Pribadi" : "Badan Usaha",
   );
   barisIdentitas(k, "Nama usaha", identitas.namaToko);
   barisIdentitas(k, "Jenis usaha", identitas.jenisUsaha);

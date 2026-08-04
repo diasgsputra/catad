@@ -68,7 +68,9 @@ export const LABEL_REZIM: Record<RezimPajak, string> = {
   FINAL_UMKM: "PPh Final UMKM",
   NPPN: "Norma Penghitungan Penghasilan Neto",
   PEMBUKUAN_OP: "Pembukuan — orang pribadi",
-  PEMBUKUAN_BADAN: "Pembukuan — badan",
+  // "Badan" adalah istilah resmi, tetapi berdiri sendiri ia ambigu bagi orang
+  // awam — badan apa? Ditulis "badan usaha" supaya terbaca sekali lihat.
+  PEMBUKUAN_BADAN: "Pembukuan — badan usaha",
   TANPA_HITUNG: "Rekap saja, tanpa hitung pajak",
 };
 
@@ -80,7 +82,7 @@ export const KETERANGAN_REZIM: Record<RezimPajak, string> = {
   PEMBUKUAN_OP:
     "Pajak dihitung dari laba bersih yang sesungguhnya dikurangi PTKP, lalu dikenai tarif Pasal 17.",
   PEMBUKUAN_BADAN:
-    "Laba bersih dikenai tarif PPh badan, dengan pilihan fasilitas pengurangan tarif Pasal 31E.",
+    "Laba bersih dikenai tarif PPh badan 22%. Dengan fasilitas Pasal 31E tarifnya dipotong setengah menjadi 11% selama peredaran bruto belum melampaui Rp4,8 miliar.",
   TANPA_HITUNG:
     "Catad hanya menyusun rekap peredaran bruto dan laba rugi. Perhitungan pajaknya dikerjakan di luar aplikasi.",
 };
@@ -137,9 +139,9 @@ export const RINGKASAN_REZIM: RingkasanRezim[] = [
   },
   {
     rezim: "PEMBUKUAN_BADAN",
-    sebutan: "Dihitung dari untung, berbadan hukum",
-    dasarHitung: "Laba bersih × 22%",
-    untuk: "PT, CV, firma, koperasi",
+    sebutan: "Dihitung dari untung, usaha berbadan hukum",
+    dasarHitung: "Laba bersih × 22%, atau 11% dengan Pasal 31E",
+    untuk: "Badan usaha: PT, CV, firma, koperasi",
     sumber: "UU PPh Ps. 17 ayat (1) b & Ps. 31E",
   },
   {
@@ -283,6 +285,17 @@ export function pphPasal17(pkp: number): number {
 }
 
 /**
+ * Tarif efektif setelah pengurangan 50% Pasal 31E.
+ *
+ * Ada sebagai fungsi supaya angka yang ditampilkan ke pemilik toko ("tarifnya
+ * jadi 11%") berasal dari perhitungan yang sama dengan yang dipakai menghitung
+ * pajaknya. Kalau salah satunya berubah, keduanya ikut.
+ */
+export function tarifEfektif31E(tarifBps: number): number {
+  return Math.floor(tarifBps / 2);
+}
+
+/**
  * PPh badan, dengan pilihan fasilitas Pasal 31E.
  *
  * Pasal 31E memberi pengurangan tarif 50% atas Penghasilan Kena Pajak yang
@@ -312,15 +325,13 @@ export function pphBadan({
 
   if (peredaranBruto <= BATAS_PEREDARAN_FINAL) {
     // Seluruh PKP mendapat pengurangan tarif 50%.
-    return terapkanBps(pkp, Math.floor(tarifBps / 2));
+    return terapkanBps(pkp, tarifEfektif31E(tarifBps));
   }
 
   const pkpFasilitas = Math.floor((BATAS_PEREDARAN_FINAL / peredaranBruto) * pkp);
   const pkpBiasa = pkp - pkpFasilitas;
 
-  return (
-    terapkanBps(pkpFasilitas, Math.floor(tarifBps / 2)) + terapkanBps(pkpBiasa, tarifBps)
-  );
+  return terapkanBps(pkpFasilitas, tarifEfektif31E(tarifBps)) + terapkanBps(pkpBiasa, tarifBps);
 }
 
 // ── Hasil perhitungan ───────────────────────────────────────────────────────
@@ -587,6 +598,18 @@ function hitungPembukuanBadan(dasar: Dasar, labaBersih: number): HasilPajak {
   const dapatFasilitas =
     konfigurasi.pakai31E && totalPeredaranBruto > 0 && totalPeredaranBruto <= BATAS_PEREDARAN_31E;
 
+  const tarif = persenDariBps(konfigurasi.tarifBadanBps);
+  const efektif = persenDariBps(tarifEfektif31E(konfigurasi.tarifBadanBps));
+
+  // Di bawah Rp4,8 miliar seluruh PKP dapat potongan, jadi tarif efektifnya
+  // satu angka bulat yang bisa disebutkan. Di atasnya hanya sebagian yang
+  // dapat, sehingga menyebut satu angka justru menyesatkan.
+  const rumusPajak = !dapatFasilitas
+    ? tarif
+    : totalPeredaranBruto <= BATAS_PEREDARAN_FINAL
+      ? `efektif ${efektif} — tarif ${tarif} dipotong setengah oleh Pasal 31E`
+      : `${tarif}; bagian dari peredaran bruto sampai Rp4,8 miliar dipotong menjadi ${efektif} (Pasal 31E)`;
+
   return {
     ...dasar,
     pajakTerutang,
@@ -602,9 +625,7 @@ function hitungPembukuanBadan(dasar: Dasar, labaBersih: number): HasilPajak {
       {
         label: "PPh badan terutang",
         nilai: pajakTerutang,
-        rumus: dapatFasilitas
-          ? `${persenDariBps(konfigurasi.tarifBadanBps)} dengan pengurangan 50% Pasal 31E`
-          : persenDariBps(konfigurasi.tarifBadanBps),
+        rumus: rumusPajak,
         hasil: true,
       },
     ],
@@ -732,7 +753,9 @@ export function catatanPajak(hasil: HasilPajak): string[] {
       catatan.push(
         `Laba bersih dikenai tarif PPh badan ${persenDariBps(k.tarifBadanBps)}` +
           (k.pakai31E
-            ? ", dengan fasilitas pengurangan tarif 50% Pasal 31E atas bagian peredaran bruto sampai Rp4,8 miliar."
+            ? `. Fasilitas Pasal 31E memotong tarif itu setengah menjadi ${persenDariBps(
+                tarifEfektif31E(k.tarifBadanBps),
+              )} atas bagian penghasilan kena pajak yang berasal dari peredaran bruto sampai Rp4,8 miliar.`
             : ", tanpa fasilitas Pasal 31E."),
       );
       catatan.push(
