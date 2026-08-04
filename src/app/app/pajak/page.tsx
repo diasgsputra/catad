@@ -109,7 +109,7 @@ export default async function HalamanPajak({
         <Peringatan nada="waspada" className="mt-4" judul="NPWP belum diisi">
           Dokumen tetap bisa diunduh, tetapi kepala laporannya akan menulis &ldquo;belum
           diisi&rdquo;.{" "}
-          <Link href="/app/pengaturan" className="font-bold underline">
+          <Link href="/app/pengaturan/pajak" className="font-bold underline">
             Lengkapi identitas pajak
           </Link>{" "}
           supaya siap dilampirkan.
@@ -120,7 +120,7 @@ export default async function HalamanPajak({
         <Peringatan nada="bahaya" className="mt-4" judul="Melampaui batas skema PPh Final">
           Peredaran bruto {tahun} sebesar {rupiah(pajak.totalPeredaranBruto)} melampaui Rp4,8
           miliar, sehingga skema final tidak lagi berlaku.{" "}
-          <Link href="/app/pengaturan" className="font-bold underline">
+          <Link href="/app/pengaturan/pajak" className="font-bold underline">
             Ubah dasar perhitungan di pengaturan
           </Link>{" "}
           dan hubungi konsultan pajak — angka di halaman ini tidak bisa dipakai apa adanya.
@@ -357,7 +357,10 @@ export default async function HalamanPajak({
                 </dl>
                 <p className="border-t border-garis px-4 py-3 text-[11.5px] leading-relaxed text-tinta-3">
                   {KETERANGAN_REZIM[konfigurasi.rezim]}{" "}
-                  <Link href="/app/pengaturan" className="font-bold text-merek hover:underline">
+                  <Link
+                    href="/app/pengaturan/pajak"
+                    className="font-bold text-merek hover:underline"
+                  >
                     Ubah dasar perhitungan
                   </Link>
                 </p>

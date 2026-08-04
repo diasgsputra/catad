@@ -283,15 +283,24 @@ yang berbeda menurut jenis usaha dan wilayah. Memaku satu rezim berarti
 menyodorkan angka yang salah kepada sebagian besar pemakai — dan angka pajak
 yang salah lebih berbahaya daripada tidak ada angka sama sekali.
 
-Rezim dan parameternya disimpan **per toko**, diatur di `/app/pengaturan`:
+Rezim dan parameternya disimpan **per toko**, diatur di halamannya sendiri,
+`/app/pengaturan/pajak` — terpisah dari pengaturan toko karena isinya menuntut
+pertimbangan, bukan sekadar diisi. Halaman itu juga memuat tabel rujukan kelima
+rezim beserta dasar hukumnya, karena nama resminya asing bagi kebanyakan pemilik
+toko dan salah pilih menghasilkan angka yang salah.
 
-| Rezim | Dasar pengenaan | Parameter yang bisa diatur |
-|---|---|---|
-| **PPh Final UMKM** | Peredaran bruto | Tarif (bawaan 0,5%), fasilitas bebas (bawaan Rp500 juta) |
-| **Norma (NPPN)** | Peredaran bruto × norma, lalu Pasal 17 | Persentase norma, PTKP |
-| **Pembukuan — orang pribadi** | Laba bersih − PTKP, lalu Pasal 17 | PTKP |
-| **Pembukuan — badan** | Laba bersih, tarif PPh badan | Tarif (bawaan 22%), fasilitas Pasal 31E |
-| **Rekap saja** | — | Catad hanya menyusun rekap; pajak dihitung di luar |
+| Rezim | Dasar pengenaan | Parameter yang bisa diatur | Dasar hukum |
+|---|---|---|---|
+| **PPh Final UMKM** | Peredaran bruto | Tarif (bawaan 0,5%), fasilitas bebas (bawaan Rp500 juta) | PP 23/2018 → PP 55/2022 → PP 20/2026 |
+| **Norma (NPPN)** | Peredaran bruto × norma, lalu Pasal 17 | Persentase norma, PTKP | UU PPh Pasal 14 · PER-17/PJ/2015 |
+| **Pembukuan — orang pribadi** | Laba bersih − PTKP, lalu Pasal 17 | PTKP | UU PPh Pasal 16 & 17 · UU HPP |
+| **Pembukuan — badan** | Laba bersih, tarif PPh badan | Tarif (bawaan 22%), fasilitas Pasal 31E | UU PPh Pasal 17 ayat (1) huruf b & Pasal 31E |
+| **Rekap saja** | — | Catad hanya menyusun rekap; pajak dihitung di luar | — |
+
+Tabel itu satu sumber, `RINGKASAN_REZIM` di `src/lib/pajak.ts` — berkas yang
+sama dengan yang menghitung angkanya, supaya keterangan di layar tidak bisa
+menyimpang dari mesinnya. Ada uji unit yang menjaga dasar hukumnya tidak
+tertukar antar rezim.
 
 Yang tetap dipaku di kode hanya yang ditetapkan undang-undang dan berlaku
 seragam: lapisan tarif Pasal 17 (5/15/25/30/35% menurut UU HPP), ambang Rp4,8
@@ -304,6 +313,11 @@ menghapus batas waktu bagi Orang Pribadi dan Perseroan Perorangan.
 Catatan pada dokumen **diturunkan dari konfigurasi yang benar-benar dipakai**,
 bukan kalimat tetap. Dokumen berbasis Norma tidak akan menyebut PP 23/2018,
 karena menyebut dasar hukum yang tidak dipakai justru menyesatkan.
+
+Yang **tidak** dihitung dinyatakan apa adanya, bukan didiamkan: PPN (perlu pajak
+masukan dari faktur pembelian yang tidak dicatat Catad), PB1/PBJT (bukan
+penghasilan toko), dan angsuran PPh Pasal 25 di luar skema final (besarannya
+mengacu pada SPT tahun sebelumnya, bukan pada penjualan tahun berjalan).
 
 ### Dua keputusan perhitungan yang mudah salah
 

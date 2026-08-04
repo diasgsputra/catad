@@ -4,7 +4,8 @@ import { db } from "@/lib/db";
 import { konteks } from "@/lib/sesi";
 import { JudulHalaman, Kartu, KepalaKartu, Lencana, Peringatan } from "@/components/ui";
 import { Ikon } from "@/components/ikon";
-import { rupiah, tanggalSingkat } from "@/lib/format";
+import { tanggalSingkat } from "@/lib/format";
+import { LABEL_REZIM } from "@/lib/pajak";
 import { FormSandi, FormToko } from "./form-toko";
 
 export const metadata: Metadata = { title: "Pengaturan" };
@@ -51,16 +52,6 @@ export default async function HalamanPengaturan() {
                 waToko: k.toko.waToko,
                 catatanNota: k.toko.catatanNota,
                 persenPajak: k.toko.persenPajak,
-                npwp: k.toko.npwp,
-                namaWajibPajak: k.toko.namaWajibPajak,
-                jenisWajibPajak: k.toko.jenisWajibPajak,
-                rezimPajak: k.toko.rezimPajak,
-                tarifFinalBps: k.toko.tarifFinalBps,
-                fasilitasBebas: k.toko.fasilitasBebas,
-                normaBps: k.toko.normaBps,
-                ptkpSetahun: k.toko.ptkpSetahun,
-                tarifBadanBps: k.toko.tarifBadanBps,
-                pakai31E: k.toko.pakai31E,
               }}
               bolehUbah={bolehUbah}
             />
@@ -111,6 +102,37 @@ export default async function HalamanPengaturan() {
               </Link>
             </div>
           </Kartu>
+
+          {/* Pengaturan pajak punya halaman sendiri karena isinya menuntut
+              pertimbangan, bukan sekadar diisi. Kartu ini menyebutkan dasar
+              yang sedang dipakai supaya pemilik toko tahu keadaannya tanpa
+              perlu membukanya. */}
+          {bolehUbah && (
+            <Kartu>
+              <KepalaKartu ikon="nota" judul="Pengaturan pajak" />
+              <div className="p-4">
+                <p className="text-[11px] font-bold tracking-[0.08em] text-tinta-3 uppercase">
+                  Dasar perhitungan
+                </p>
+                <p className="mt-1 text-[14px] font-bold text-tinta">
+                  {LABEL_REZIM[k.toko.rezimPajak]}
+                </p>
+                <p className="mt-2 text-[12.5px] leading-relaxed text-tinta-2">
+                  {k.toko.npwp
+                    ? `NPWP ${k.toko.npwp} tercatat.`
+                    : "NPWP belum diisi, sehingga kepala dokumen laporan ditulis “belum diisi”."}
+                </p>
+
+                <Link
+                  href="/app/pengaturan/pajak"
+                  className="mt-3.5 inline-flex h-9 items-center gap-1.5 rounded-lg border border-garis-2 px-3.5 text-[13px] font-bold text-tinta transition-colors hover:bg-kertas-2"
+                >
+                  Atur dasar perhitungan
+                  <Ikon nama="kanan" size={13} />
+                </Link>
+              </div>
+            </Kartu>
+          )}
 
           <Kartu>
             <KepalaKartu ikon="grafik" judul="Isi toko" />

@@ -70,6 +70,7 @@ async function ujiHttp() {
     "/app/produk",
     "/app/pengguna",
     "/app/pengaturan",
+    "/app/pengaturan/pajak",
   ]) {
     const r = await ambil(jalur);
     const keLogin = r.status === 307 || r.status === 302;
@@ -1084,6 +1085,100 @@ async function ujiLaporanPajak() {
     tamu.status === 307 || tamu.status === 302 || tamu.status === 403,
     `status ${tamu.status}`,
   );
+
+  await ujiPengaturanPajak({ pro, gratis, kasir });
+}
+
+// ── H. Halaman pengaturan pajak ─────────────────────────────────────────────
+
+/**
+ * Pengaturan pajak berdiri sendiri, terpisah dari pengaturan toko.
+ *
+ * Yang diuji bukan cuma "halamannya ada", melainkan bahwa pemisahannya
+ * benar-benar terjadi: istilah perpajakan tidak boleh tertinggal di pengaturan
+ * biasa, dan jalan menuju halaman barunya harus terlihat. Halaman baru yang
+ * tidak ditautkan sama saja dengan tidak ada.
+ */
+async function ujiPengaturanPajak({ pro, gratis, kasir }) {
+  bagian("H. Pengaturan pajak");
+
+  const NAMA_REZIM = [
+    "PPh Final UMKM",
+    "Norma Penghitungan Penghasilan Neto",
+    "Pembukuan — orang pribadi",
+    "Pembukuan — badan",
+    "Rekap saja, tanpa hitung pajak",
+  ];
+
+  const SUMBER = ["PP 23/2018", "PER-17/PJ/2015", "UU HPP", "31E"];
+
+  if (pro) {
+    const r = await ambil("/app/pengaturan/pajak", { headers: { cookie: pro } });
+    const isi = await r.text();
+
+    periksa("pemilik bisa membuka pengaturan pajak", r.status === 200, `status ${r.status}`);
+
+    for (const nama of NAMA_REZIM) {
+      periksa(`tabel rujukan menyebut "${nama}"`, isi.includes(nama));
+    }
+    for (const s of SUMBER) {
+      periksa(`tabel rujukan mencantumkan sumber ${s}`, isi.includes(s));
+    }
+
+    periksa(
+      "istilah resmi diterjemahkan ke bahasa sehari-hari",
+      /dihitung dari omzet/i.test(isi) && /dihitung dari untung/i.test(isi),
+    );
+    periksa(
+      "halaman mengakui dirinya bukan nasihat perpajakan",
+      /bukan nasihat perpajakan/i.test(isi),
+    );
+    periksa(
+      "angsuran PPh Pasal 25 yang tidak dihitung disebutkan",
+      /Pasal 25/.test(isi),
+    );
+  }
+
+  // Bukan fitur Pro: memilih dasar perhitungan harus bisa dilakukan sebelum
+  // berlangganan, kalau tidak laporannya salah sejak unduhan pertama.
+  if (gratis) {
+    const r = await ambil("/app/pengaturan/pajak", { headers: { cookie: gratis } });
+    periksa(
+      "pemilik paket gratis juga bisa mengatur dasar perhitungan",
+      r.status === 200,
+      `status ${r.status}`,
+    );
+  }
+
+  // NPWP dan dasar perhitungan bukan urusan kasir, sama seperti laporannya.
+  if (kasir) {
+    const r = await ambil("/app/pengaturan/pajak", { headers: { cookie: kasir } });
+    periksa(
+      "kasir tidak bisa membuka pengaturan pajak",
+      r.status === 307 || r.status === 302,
+      `status ${r.status}`,
+    );
+  }
+
+  // ── Pemisahan dari pengaturan biasa ──
+  if (pro) {
+    const r = await ambil("/app/pengaturan", { headers: { cookie: pro } });
+    const isi = await r.text();
+
+    periksa(
+      "pengaturan biasa menautkan halaman pengaturan pajak",
+      isi.includes("/app/pengaturan/pajak"),
+    );
+    // Diperiksa lewat nama kolom formulir, bukan tulisan di layar: kartu
+    // ringkasan memang menyebut dasar perhitungan yang sedang dipakai, jadi
+    // mencocokkan teks akan gagal sendiri begitu toko contohnya berganti rezim.
+    for (const kolom of ["npwp", "rezimPajak", "tarifBadanPersen", "ptkpSetahun"]) {
+      // Dua bentuk: HTML hasil render, dan muatan RSC yang tanda kutipnya
+      // dilarikan.
+      const ada = isi.includes(`name="${kolom}"`) || isi.includes(`name=\\"${kolom}\\"`);
+      periksa(`kolom ${kolom} sudah pindah dari pengaturan biasa`, !ada);
+    }
+  }
 }
 
 // ── Jalankan ────────────────────────────────────────────────────────────────

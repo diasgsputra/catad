@@ -4,7 +4,6 @@ import { useActionState } from "react";
 import { Bidang, Kolom, Peringatan, Pilih, Tombol } from "@/components/ui";
 import { gantiSandi, simpanPengaturanToko } from "@/actions/toko";
 import type { HasilAksi } from "@/actions/produk";
-import { FormPajak, type NilaiPajak } from "./form-pajak";
 
 const AWAL: HasilAksi = {};
 
@@ -31,16 +30,6 @@ export function FormToko({
     waToko: string | null;
     catatanNota: string | null;
     persenPajak: number;
-    npwp: string | null;
-    namaWajibPajak: string | null;
-    jenisWajibPajak: "ORANG_PRIBADI" | "BADAN";
-    rezimPajak: NilaiPajak["rezimPajak"];
-    tarifFinalBps: number;
-    fasilitasBebas: number;
-    normaBps: number;
-    ptkpSetahun: number;
-    tarifBadanBps: number;
-    pakai31E: boolean;
   };
   bolehUbah: boolean;
 }) {
@@ -142,82 +131,6 @@ export function FormToko({
           />
         </Bidang>
       </div>
-
-      {/* ── Identitas pajak ──
-          Hanya dipakai sebagai kepala dokumen laporan pajak. Boleh dikosongkan;
-          toko yang belum punya NPWP tetap bisa memakai laporannya untuk
-          pembukuan sendiri. */}
-      <div className="border-t border-garis pt-4">
-        <p className="text-[13px] font-bold text-tinta">Identitas pajak</p>
-        <p className="mt-0.5 text-[12px] leading-relaxed text-tinta-3">
-          Muncul di kepala dokumen laporan pajak. Boleh dikosongkan — data ini tidak pernah
-          dikirim ke mana pun.
-        </p>
-
-        <div className="mt-3 grid gap-4 sm:grid-cols-2">
-          <Bidang
-            label="NPWP / NIK"
-            htmlFor="npwp"
-            galat={keadaan.galat?.npwp}
-            petunjuk="Boleh ditulis dengan titik dan tanda hubung."
-          >
-            <Kolom
-              id="npwp"
-              name="npwp"
-              defaultValue={toko.npwp ?? ""}
-              placeholder="00.000.000.0-000.000"
-              galat={keadaan.galat?.npwp}
-              disabled={!bolehUbah}
-              className="angka"
-            />
-          </Bidang>
-
-          <Bidang
-            label="Jenis wajib pajak"
-            htmlFor="jenisWajibPajak"
-            petunjuk="Fasilitas Rp500 juta bebas PPh hanya untuk orang pribadi."
-          >
-            <Pilih
-              id="jenisWajibPajak"
-              name="jenisWajibPajak"
-              defaultValue={toko.jenisWajibPajak}
-              disabled={!bolehUbah}
-            >
-              <option value="ORANG_PRIBADI">Orang Pribadi</option>
-              <option value="BADAN">Badan (PT / CV / koperasi)</option>
-            </Pilih>
-          </Bidang>
-        </div>
-
-        <Bidang
-          label="Nama wajib pajak"
-          htmlFor="namaWajibPajak"
-          className="mt-4"
-          petunjuk="Isi bila berbeda dari nama toko. Kosong berarti memakai nama toko."
-        >
-          <Kolom
-            id="namaWajibPajak"
-            name="namaWajibPajak"
-            defaultValue={toko.namaWajibPajak ?? ""}
-            placeholder={toko.nama}
-            disabled={!bolehUbah}
-          />
-        </Bidang>
-      </div>
-
-      <FormPajak
-        nilai={{
-          rezimPajak: toko.rezimPajak,
-          tarifFinalBps: toko.tarifFinalBps,
-          fasilitasBebas: toko.fasilitasBebas,
-          normaBps: toko.normaBps,
-          ptkpSetahun: toko.ptkpSetahun,
-          tarifBadanBps: toko.tarifBadanBps,
-          pakai31E: toko.pakai31E,
-        }}
-        bolehUbah={bolehUbah}
-        galat={keadaan.galat}
-      />
 
       {bolehUbah && (
         <div className="flex justify-end pt-1">

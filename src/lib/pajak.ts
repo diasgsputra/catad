@@ -86,6 +86,72 @@ export const KETERANGAN_REZIM: Record<RezimPajak, string> = {
 };
 
 /**
+ * Ringkasan pembanding kelima rezim, untuk ditampilkan sebagai rujukan pada
+ * halaman pengaturan pajak.
+ *
+ * Ada di berkas ini, bukan di komponen halamannya, supaya nama dan dasar hukum
+ * yang dibaca pemilik toko berasal dari tempat yang sama dengan yang menghitung
+ * angkanya. Tabel rujukan yang menyimpang dari mesin hitungnya lebih buruk
+ * daripada tidak ada tabel sama sekali.
+ *
+ * `dasarHitung` memuat angka ketentuan umum yang berlaku sekarang, bukan nilai
+ * yang tersimpan per toko — itu ada pada formulir pengaturan, dan bisa berbeda.
+ */
+export type RingkasanRezim = {
+  rezim: RezimPajak;
+  /**
+   * Nama resminya dalam bahasa sehari-hari. Istilah DJP dipakai apa adanya
+   * supaya angkanya bisa dicocokkan saat mengisi SPT, tetapi nama itu asing
+   * bagi pemilik warung — inilah terjemahannya.
+   */
+  sebutan: string;
+  /** Kalimat pendek: dari angka apa pajaknya dihitung. */
+  dasarHitung: string;
+  /** Siapa yang biasanya memakai rezim ini. */
+  untuk: string;
+  /** Dasar hukumnya, ditulis seperti yang lazim dikutip. */
+  sumber: string;
+};
+
+export const RINGKASAN_REZIM: RingkasanRezim[] = [
+  {
+    rezim: "FINAL_UMKM",
+    sebutan: "Pajak dihitung dari omzet",
+    dasarHitung: "Omzet × 0,5%",
+    untuk: "Orang pribadi, omzet di bawah Rp4,8 miliar setahun",
+    sumber: "PP 23/2018 → PP 55/2022 → PP 20/2026",
+  },
+  {
+    rezim: "NPPN",
+    sebutan: "Untung dianggap sekian persen dari omzet",
+    dasarHitung: "Omzet × persentase norma, lalu tarif Pasal 17",
+    untuk: "Orang pribadi yang memilih pencatatan, omzet di bawah Rp4,8 miliar",
+    sumber: "UU PPh Pasal 14 · PER-17/PJ/2015",
+  },
+  {
+    rezim: "PEMBUKUAN_OP",
+    sebutan: "Pajak dihitung dari untung — usaha atas nama pribadi",
+    dasarHitung: "Laba bersih − PTKP, lalu tarif Pasal 17",
+    untuk: "Orang pribadi yang wajib atau memilih pembukuan",
+    sumber: "UU PPh Pasal 16 & 17 · UU HPP",
+  },
+  {
+    rezim: "PEMBUKUAN_BADAN",
+    sebutan: "Pajak dihitung dari untung — usaha berbadan hukum",
+    dasarHitung: "Laba bersih × 22%",
+    untuk: "Badan usaha: PT, CV, firma, koperasi",
+    sumber: "UU PPh Pasal 17 ayat (1) huruf b & Pasal 31E",
+  },
+  {
+    rezim: "TANPA_HITUNG",
+    sebutan: "Catad tidak menghitung pajaknya",
+    dasarHitung: "—",
+    untuk: "Keadaan yang tidak sesederhana empat pilihan di atas",
+    sumber: "—",
+  },
+];
+
+/**
  * Parameter perhitungan yang bisa berbeda antar toko.
  *
  * Semua tarif disimpan sebagai basis poin (bilangan bulat, 100 bps = 1%) supaya
@@ -598,6 +664,16 @@ export function ringkasLabaRugi({
  * dalam PDF. Peringatan yang hanya ada di salah satunya adalah peringatan yang
  * gagal.
  */
+/**
+ * Di luar skema final, pajak setahun umumnya dicicil lewat angsuran PPh Pasal
+ * 25 tiap bulan. Catad tidak menghitungnya — besarnya diturunkan dari SPT tahun
+ * sebelumnya, bukan dari penjualan tahun berjalan. Menyebut angka tahunan tanpa
+ * menyinggung ini membuat pembacanya mengira tidak ada kewajiban bulanan.
+ */
+const CATATAN_PASAL_25 =
+  "Angsuran PPh Pasal 25 tidak dihitung di sini. Di luar skema final, pajak setahun " +
+  "umumnya dicicil bulanan dengan besaran yang mengacu pada SPT tahun sebelumnya.";
+
 export function catatanPajak(hasil: HasilPajak): string[] {
   const k = hasil.konfigurasi;
   const catatan: string[] = [];
@@ -633,7 +709,8 @@ export function catatanPajak(hasil: HasilPajak): string[] {
       catatan.push(
         `PTKP yang dipakai ${rupiahSingkat(k.ptkp)} setahun. Sesuaikan bila status keluarga berubah.`,
       );
-      catatan.push("PPh dihitung dengan tarif progresif Pasal 17 dan disetor setahun sekali.");
+      catatan.push("PPh dihitung dengan tarif progresif Pasal 17 untuk satu tahun pajak penuh.");
+      catatan.push(CATATAN_PASAL_25);
       break;
 
     case "PEMBUKUAN_OP":
@@ -648,6 +725,7 @@ export function catatanPajak(hasil: HasilPajak): string[] {
         "PENTING: laba menurut catatan belum tentu sama dengan laba fiskal. Biaya yang tidak " +
           "boleh dikurangkan, penyusutan, dan koreksi fiskal lain belum diperhitungkan.",
       );
+      catatan.push(CATATAN_PASAL_25);
       break;
 
     case "PEMBUKUAN_BADAN":
@@ -661,6 +739,7 @@ export function catatanPajak(hasil: HasilPajak): string[] {
         "PENTING: laba menurut catatan belum tentu sama dengan laba fiskal. Biaya yang tidak " +
           "boleh dikurangkan, penyusutan, dan koreksi fiskal lain belum diperhitungkan.",
       );
+      catatan.push(CATATAN_PASAL_25);
       break;
 
     default:

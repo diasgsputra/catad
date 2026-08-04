@@ -125,7 +125,18 @@ export const skemaPengaturanToko = z.object({
   waToko: z.string().trim().max(24).optional(),
   catatanNota: z.string().trim().max(120).optional(),
   persenPajak: z.coerce.number().int().min(0, "Pajak tidak boleh negatif").max(30, "Maksimal 30%").default(0),
+});
 
+/**
+ * Pengaturan pajak, terpisah dari identitas toko.
+ *
+ * Dipisah karena keduanya diisi pada saat yang berbeda oleh orang yang berbeda:
+ * identitas toko diisi sekali saat mendaftar, sedangkan dasar perhitungan pajak
+ * biasanya baru ditentukan setelah bertanya ke konsultan. Menggabungkannya
+ * dalam satu formulir membuat pemilik toko harus melewati sederet istilah
+ * perpajakan hanya untuk mengganti nomor WhatsApp toko.
+ */
+export const skemaPengaturanPajak = z.object({
   // ── Identitas pajak ──
   // Semuanya boleh kosong: toko yang belum punya NPWP tetap bisa memakai
   // laporan pajak untuk pembukuannya sendiri.

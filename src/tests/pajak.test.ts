@@ -3,7 +3,9 @@ import {
   BATAS_PEREDARAN_31E,
   BATAS_PEREDARAN_FINAL,
   KONFIGURASI_BAWAAN,
+  LABEL_REZIM,
   LAPISAN_PASAL_17,
+  RINGKASAN_REZIM,
   bulatkanPkp,
   catatanPajak,
   hitungPajak,
@@ -422,6 +424,70 @@ describe("sifat yang berlaku untuk semua rezim", () => {
     // Dokumen berbasis Norma tidak boleh menyebut dasar hukum skema final.
     expect(norma).not.toContain("PP 23/2018");
     expect(norma).toContain("PER-17/PJ/2015");
+  });
+
+  it("mengingatkan angsuran Pasal 25 hanya pada rezim yang memang mencicil", () => {
+    const sebut = (rezim: KonfigurasiPajak["rezim"]) =>
+      catatanPajak(
+        hitungPajak({
+          omzetBulanan: Array(12).fill(50 * JT),
+          konfigurasi: konfig({ rezim }),
+          tahun: 2026,
+          labaBersih: 100 * JT,
+        }),
+      )
+        .join(" ")
+        .includes("Pasal 25");
+
+    // Skema final sudah disetor tiap masa pajak, jadi tidak ada angsuran
+    // Pasal 25 — menyebutkannya justru membingungkan.
+    expect(sebut("FINAL_UMKM")).toBe(false);
+    expect(sebut("TANPA_HITUNG")).toBe(false);
+
+    expect(sebut("NPPN")).toBe(true);
+    expect(sebut("PEMBUKUAN_OP")).toBe(true);
+    expect(sebut("PEMBUKUAN_BADAN")).toBe(true);
+  });
+});
+
+describe("RINGKASAN_REZIM", () => {
+  it("mencakup setiap rezim tepat satu kali", () => {
+    const semua: Array<KonfigurasiPajak["rezim"]> = [
+      "FINAL_UMKM",
+      "NPPN",
+      "PEMBUKUAN_OP",
+      "PEMBUKUAN_BADAN",
+      "TANPA_HITUNG",
+    ];
+
+    expect(RINGKASAN_REZIM.map((r) => r.rezim).sort()).toEqual([...semua].sort());
+  });
+
+  it("setiap baris terisi, karena sel kosong pada tabel rujukan tidak menjelaskan apa pun", () => {
+    for (const r of RINGKASAN_REZIM) {
+      expect(r.sebutan.length, r.rezim).toBeGreaterThan(5);
+      expect(r.dasarHitung.length, r.rezim).toBeGreaterThan(0);
+      expect(r.untuk.length, r.rezim).toBeGreaterThan(5);
+      expect(r.sumber.length, r.rezim).toBeGreaterThan(0);
+    }
+  });
+
+  it("menyebut nama resmi yang sama dengan pilihan pada formulir", () => {
+    // Kalau tabel rujukan memakai nama lain, pembacanya tidak bisa mencocokkan
+    // barisnya dengan pilihan yang harus dia ambil.
+    for (const r of RINGKASAN_REZIM) {
+      expect(LABEL_REZIM[r.rezim], r.rezim).toBeTruthy();
+    }
+  });
+
+  it("dasar hukumnya tidak tertukar antar rezim", () => {
+    const sumber = Object.fromEntries(RINGKASAN_REZIM.map((r) => [r.rezim, r.sumber]));
+
+    expect(sumber.FINAL_UMKM).toContain("PP 23/2018");
+    expect(sumber.NPPN).toContain("PER-17/PJ/2015");
+    expect(sumber.NPPN).not.toContain("PP 23/2018");
+    expect(sumber.PEMBUKUAN_BADAN).toContain("31E");
+    expect(sumber.PEMBUKUAN_OP).not.toContain("31E");
   });
 });
 

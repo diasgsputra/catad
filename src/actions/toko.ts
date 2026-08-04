@@ -9,6 +9,7 @@ import { konteks } from "@/lib/sesi";
 import { NAMA_COOKIE, buatToken, opsiCookie } from "@/lib/auth";
 import {
   skemaGantiSandi,
+  skemaPengaturanPajak,
   skemaPengaturanToko,
   skemaPengguna,
   galatForm,
@@ -37,17 +38,6 @@ export async function simpanPengaturanToko(
     waToko: data.get("waToko") || undefined,
     catatanNota: data.get("catatanNota") || undefined,
     persenPajak: data.get("persenPajak") || 0,
-    npwp: data.get("npwp") || undefined,
-    namaWajibPajak: data.get("namaWajibPajak") || undefined,
-    jenisWajibPajak: data.get("jenisWajibPajak") || "ORANG_PRIBADI",
-    rezimPajak: data.get("rezimPajak") || "FINAL_UMKM",
-    tarifFinalPersen: data.get("tarifFinalPersen") ?? 0.5,
-    fasilitasBebas: data.get("fasilitasBebas") ?? 500_000_000,
-    normaPersen: data.get("normaPersen") ?? 25,
-    ptkpSetahun: data.get("ptkpSetahun") ?? 54_000_000,
-    tarifBadanPersen: data.get("tarifBadanPersen") ?? 22,
-    // Kotak centang tidak terkirim sama sekali saat tidak dicentang.
-    pakai31E: data.get("pakai31E") === "on",
   });
 
   if (!hasil.success) return { galat: galatForm(hasil.error) };
@@ -63,17 +53,6 @@ export async function simpanPengaturanToko(
       waToko: d.waToko || null,
       catatanNota: d.catatanNota || null,
       persenPajak: d.persenPajak,
-      npwp: d.npwp || null,
-      namaWajibPajak: d.namaWajibPajak || null,
-      jenisWajibPajak: d.jenisWajibPajak,
-      rezimPajak: d.rezimPajak,
-      // Persen dari formulir disimpan sebagai basis poin bilangan bulat.
-      tarifFinalBps: Math.round(d.tarifFinalPersen * 100),
-      fasilitasBebas: d.fasilitasBebas,
-      normaBps: Math.round(d.normaPersen * 100),
-      ptkpSetahun: d.ptkpSetahun,
-      tarifBadanBps: Math.round(d.tarifBadanPersen * 100),
-      pakai31E: d.pakai31E,
     },
   });
 
@@ -93,6 +72,63 @@ export async function simpanPengaturanToko(
   revalidatePath("/app");
 
   return { sukses: true, pesan: "Pengaturan toko disimpan." };
+}
+
+/**
+ * Menyimpan identitas pajak dan dasar perhitungannya.
+ *
+ * Terpisah dari `simpanPengaturanToko` supaya mengganti nama toko tidak pernah
+ * ikut menulis ulang parameter pajak, dan sebaliknya. Keduanya menyentuh baris
+ * Toko yang sama, tetapi kolomnya tidak beririsan.
+ */
+export async function simpanPengaturanPajak(
+  _sebelum: HasilAksi,
+  data: FormData,
+): Promise<HasilAksi> {
+  const k = await konteks();
+  if (k.sesi.peran !== "PEMILIK") {
+    return { galat: { _: "Hanya pemilik yang bisa mengubah pengaturan pajak." } };
+  }
+
+  const hasil = skemaPengaturanPajak.safeParse({
+    npwp: data.get("npwp") || undefined,
+    namaWajibPajak: data.get("namaWajibPajak") || undefined,
+    jenisWajibPajak: data.get("jenisWajibPajak") || "ORANG_PRIBADI",
+    rezimPajak: data.get("rezimPajak") || "FINAL_UMKM",
+    tarifFinalPersen: data.get("tarifFinalPersen") ?? 0.5,
+    fasilitasBebas: data.get("fasilitasBebas") ?? 500_000_000,
+    normaPersen: data.get("normaPersen") ?? 25,
+    ptkpSetahun: data.get("ptkpSetahun") ?? 54_000_000,
+    tarifBadanPersen: data.get("tarifBadanPersen") ?? 22,
+    // Kotak centang tidak terkirim sama sekali saat tidak dicentang.
+    pakai31E: data.get("pakai31E") === "on",
+  });
+
+  if (!hasil.success) return { galat: galatForm(hasil.error) };
+  const d = hasil.data;
+
+  await db.toko.update({
+    where: { id: k.toko.id },
+    data: {
+      npwp: d.npwp || null,
+      namaWajibPajak: d.namaWajibPajak || null,
+      jenisWajibPajak: d.jenisWajibPajak,
+      rezimPajak: d.rezimPajak,
+      // Persen dari formulir disimpan sebagai basis poin bilangan bulat.
+      tarifFinalBps: Math.round(d.tarifFinalPersen * 100),
+      fasilitasBebas: d.fasilitasBebas,
+      normaBps: Math.round(d.normaPersen * 100),
+      ptkpSetahun: d.ptkpSetahun,
+      tarifBadanBps: Math.round(d.tarifBadanPersen * 100),
+      pakai31E: d.pakai31E,
+    },
+  });
+
+  revalidatePath("/app/pengaturan/pajak");
+  // Angka pada laporan berubah begitu dasar perhitungannya berubah.
+  revalidatePath("/app/pajak");
+
+  return { sukses: true, pesan: "Pengaturan pajak disimpan." };
 }
 
 export async function gantiSandi(_sebelum: HasilAksi, data: FormData): Promise<HasilAksi> {
