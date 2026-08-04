@@ -999,6 +999,93 @@ async function ujiPanelOperator() {
   );
 }
 
+// ── G. Laporan pajak ────────────────────────────────────────────────────────
+
+async function ujiLaporanPajak() {
+  bagian("G. Laporan pajak");
+
+  if (!process.env.JWT_SECRET) {
+    periksa("JWT_SECRET tersedia untuk menguji laporan pajak", false, "set JWT_SECRET dulu");
+    return;
+  }
+
+  const tahun = new Date().getFullYear();
+
+  // ── Pemilik paket Pro ──
+  const pro = await cookieSesi("demo@catad.id");
+  if (pro) {
+    const halaman = await ambil("/app/pajak", { headers: { cookie: pro } });
+    const isi = await halaman.text();
+
+    periksa("pemilik Pro bisa membuka laporan pajak", halaman.status === 200, `status ${halaman.status}`);
+    periksa("halaman menyebut peredaran bruto", /peredaran bruto/i.test(isi));
+    periksa("halaman menyebut PPh Final", /PPh Final/i.test(isi));
+    periksa(
+      "halaman mengakui dirinya kertas kerja, bukan formulir SPT",
+      /kertas kerja/i.test(isi) && /bukan formulir SPT/i.test(isi),
+    );
+    periksa("halaman menyebut dasar peraturannya", /PP 23\/2018/.test(isi));
+
+    const pdf = await ambil(`/api/laporan/pajak?tahun=${tahun}`, { headers: { cookie: pro } });
+    const bita = Buffer.from(await pdf.arrayBuffer());
+
+    periksa("pemilik Pro bisa mengunduh PDF", pdf.status === 200, `status ${pdf.status}`);
+    periksa(
+      "tipe isinya application/pdf",
+      (pdf.headers.get("content-type") ?? "").includes("application/pdf"),
+      pdf.headers.get("content-type") ?? "-",
+    );
+    periksa(
+      "berkas diunduh, bukan ditampilkan di tab",
+      (pdf.headers.get("content-disposition") ?? "").startsWith("attachment;"),
+    );
+    periksa("berkasnya benar-benar PDF", bita.subarray(0, 5).toString() === "%PDF-");
+    periksa("berkasnya diakhiri penanda akhir PDF", bita.toString("latin1").trimEnd().endsWith("%%EOF"));
+    periksa("berkasnya tidak kosong", bita.length > 2000, `${bita.length} bita`);
+
+    // Tahun sembarang dari URL tidak boleh memicu kueri rentang raksasa.
+    const ngawur = await ambil("/api/laporan/pajak?tahun=999999", { headers: { cookie: pro } });
+    periksa("tahun di luar rentang diabaikan, bukan diteruskan", ngawur.status === 200, `status ${ngawur.status}`);
+  }
+
+  // ── Pemilik paket Gratis: terkunci ──
+  const gratis = await cookieSesi("budi@tendabiru.id");
+  if (gratis) {
+    const halaman = await ambil("/app/pajak", { headers: { cookie: gratis } });
+    const isi = await halaman.text();
+
+    periksa("pemilik paket gratis tetap bisa membuka halamannya", halaman.status === 200, `status ${halaman.status}`);
+    periksa("halaman menawarkan paket Pro", /paket Pro/i.test(isi));
+    // Angka pajak tidak boleh bocor ke paket gratis.
+    periksa("rekapitulasi tidak ditampilkan ke paket gratis", !/Rekapitulasi per masa pajak/i.test(isi));
+
+    const pdf = await ambil("/api/laporan/pajak", { headers: { cookie: gratis } });
+    periksa("paket gratis tidak bisa mengunduh PDF", pdf.status === 403, `status ${pdf.status}`);
+  }
+
+  // ── Kasir: laporan memuat modal & laba, jadi tertutup ──
+  const kasir = await cookieSesi("andi@catad.id");
+  if (kasir) {
+    const halaman = await ambil("/app/pajak", { headers: { cookie: kasir } });
+    periksa(
+      "kasir tidak bisa membuka laporan pajak",
+      halaman.status === 307 || halaman.status === 302,
+      `status ${halaman.status}`,
+    );
+
+    const pdf = await ambil("/api/laporan/pajak", { headers: { cookie: kasir } });
+    periksa("kasir tidak bisa mengunduh PDF pajak", pdf.status === 403, `status ${pdf.status}`);
+  }
+
+  // ── Tanpa sesi ──
+  const tamu = await ambil("/api/laporan/pajak");
+  periksa(
+    "tanpa sesi tidak bisa mengunduh PDF pajak",
+    tamu.status === 307 || tamu.status === 302 || tamu.status === 403,
+    `status ${tamu.status}`,
+  );
+}
+
 // ── Jalankan ────────────────────────────────────────────────────────────────
 
 async function utama() {
@@ -1048,6 +1135,13 @@ async function utama() {
     gagal += 1;
     kegagalan.push(`Pengujian panel operator terhenti: ${galat.message}`);
     console.log(`[31mGAGAL[0m pengujian panel operator terhenti — ${galat.message}`);
+  }
+
+  try {
+    await ujiLaporanPajak();
+  } catch (galat) {
+    gagal += 1;
+    kegagalan.push(`Pengujian laporan pajak terhenti: ${galat.message}`);
   }
 
   console.log("");

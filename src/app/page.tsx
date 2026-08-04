@@ -563,6 +563,7 @@ function Harga() {
                 "Semua yang ada di paket Gratis",
                 "Catad Insight lengkap",
                 "Daftar belanja otomatis",
+                "Laporan pajak tahunan siap unduh",
                 "Barang & laporan tanpa batas",
                 "Sampai 10 akun kasir",
                 "Unduh laporan (CSV)",

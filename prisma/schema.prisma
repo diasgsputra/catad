@@ -21,6 +21,13 @@ enum Peran {
   KASIR
 }
 
+/// Menentukan apakah fasilitas peredaran bruto Rp500 juta bebas PPh berlaku.
+/// Fasilitas itu hanya untuk Wajib Pajak Orang Pribadi.
+enum JenisWajibPajak {
+  ORANG_PRIBADI
+  BADAN
+}
+
 enum MetodeBayar {
   TUNAI
   QRIS
@@ -77,6 +84,16 @@ model Toko {
   persenPajak   Int      @default(0)
   /// Nomor WhatsApp untuk kirim nota digital.
   waToko        String?
+
+  // ── Identitas untuk laporan pajak ──
+  // Dipakai hanya sebagai kepala dokumen laporan. Catad tidak pernah
+  // mengirimkan data ini ke mana pun.
+  /// NPWP atau NIK yang dipakai sebagai NPWP.
+  npwp            String?
+  /// Nama wajib pajak bila berbeda dari nama toko.
+  namaWajibPajak  String?
+  jenisWajibPajak JenisWajibPajak @default(ORANG_PRIBADI)
+
   dibuatPada    DateTime @default(now())
   diubahPada    DateTime @updatedAt
 

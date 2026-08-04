@@ -36,6 +36,9 @@ export type KonteksToko = {
     catatanNota: string | null;
     persenPajak: number;
     waToko: string | null;
+    npwp: string | null;
+    namaWajibPajak: string | null;
+    jenisWajibPajak: "ORANG_PRIBADI" | "BADAN";
   };
   paket: StatusPaket;
 };
@@ -66,6 +69,9 @@ export async function konteks(): Promise<KonteksToko> {
           catatanNota: true,
           persenPajak: true,
           waToko: true,
+          npwp: true,
+          namaWajibPajak: true,
+          jenisWajibPajak: true,
         },
       },
     },

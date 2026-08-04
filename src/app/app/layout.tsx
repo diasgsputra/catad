@@ -47,6 +47,7 @@ export default async function TataLetakApl({ children }: { children: React.React
               { label: "Catad Insight", href: "/app/insight", ikon: "insight" as const },
               { label: "Laporan", href: "/app/laporan", ikon: "grafik" as const },
               { label: "Pengeluaran", href: "/app/pengeluaran", ikon: "dompet" as const },
+              { label: "Laporan pajak", href: "/app/pajak", ikon: "nota" as const },
             ],
           },
         ]

@@ -51,6 +51,9 @@ export default async function HalamanPengaturan() {
                 waToko: k.toko.waToko,
                 catatanNota: k.toko.catatanNota,
                 persenPajak: k.toko.persenPajak,
+                npwp: k.toko.npwp,
+                namaWajibPajak: k.toko.namaWajibPajak,
+                jenisWajibPajak: k.toko.jenisWajibPajak,
               }}
               bolehUbah={bolehUbah}
             />

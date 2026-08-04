@@ -26,6 +26,7 @@ const FITUR_BANDING: Array<{ label: string; gratis: string | boolean; pro: strin
   { label: "Catad Insight (prediksi stok)", gratis: false, pro: true },
   { label: "Daftar belanja otomatis", gratis: false, pro: true },
   { label: "Deteksi barang mandek", gratis: false, pro: true },
+  { label: "Laporan pajak tahunan (PDF)", gratis: false, pro: true },
   { label: "Unduh laporan CSV", gratis: false, pro: true },
   { label: "Akun kasir", gratis: "1 akun", pro: `${PAKET.PRO.maksPengguna} akun` },
 ];

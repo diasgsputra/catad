@@ -37,6 +37,9 @@ export async function simpanPengaturanToko(
     waToko: data.get("waToko") || undefined,
     catatanNota: data.get("catatanNota") || undefined,
     persenPajak: data.get("persenPajak") || 0,
+    npwp: data.get("npwp") || undefined,
+    namaWajibPajak: data.get("namaWajibPajak") || undefined,
+    jenisWajibPajak: data.get("jenisWajibPajak") || "ORANG_PRIBADI",
   });
 
   if (!hasil.success) return { galat: galatForm(hasil.error) };
@@ -52,6 +55,9 @@ export async function simpanPengaturanToko(
       waToko: d.waToko || null,
       catatanNota: d.catatanNota || null,
       persenPajak: d.persenPajak,
+      npwp: d.npwp || null,
+      namaWajibPajak: d.namaWajibPajak || null,
+      jenisWajibPajak: d.jenisWajibPajak,
     },
   });
 

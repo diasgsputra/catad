@@ -18,6 +18,7 @@ export const HARI_UJI_COBA = 7;
 export type Fitur =
   | "insight"          // Catad Insight lengkap (prediksi stok + daftar belanja + briefing)
   | "ekspor"           // Unduh laporan CSV
+  | "pajak"            // Laporan pajak tahunan + unduh PDF
   | "laporanPenuh"     // Rentang laporan tanpa batas
   | "banyakKasir"      // Tambah akun staf
   | "produkTanpaBatas";
@@ -44,6 +45,7 @@ export const PAKET: Record<NamaPaket, BatasPaket> = {
     fitur: {
       insight: false,
       ekspor: false,
+      pajak: false,
       laporanPenuh: false,
       banyakKasir: false,
       produkTanpaBatas: false,
@@ -59,6 +61,7 @@ export const PAKET: Record<NamaPaket, BatasPaket> = {
     fitur: {
       insight: true,
       ekspor: true,
+      pajak: true,
       laporanPenuh: true,
       banyakKasir: true,
       produkTanpaBatas: true,

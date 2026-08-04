@@ -125,6 +125,18 @@ export const skemaPengaturanToko = z.object({
   waToko: z.string().trim().max(24).optional(),
   catatanNota: z.string().trim().max(120).optional(),
   persenPajak: z.coerce.number().int().min(0, "Pajak tidak boleh negatif").max(30, "Maksimal 30%").default(0),
+
+  // ── Identitas pajak ──
+  // Semuanya boleh kosong: toko yang belum punya NPWP tetap bisa memakai
+  // laporan pajak untuk pembukuannya sendiri.
+  npwp: z
+    .string()
+    .trim()
+    .max(25)
+    .regex(/^[0-9.\-\s]*$/, "NPWP hanya boleh berisi angka, titik, dan tanda hubung")
+    .optional(),
+  namaWajibPajak: z.string().trim().max(60).optional(),
+  jenisWajibPajak: z.enum(["ORANG_PRIBADI", "BADAN"]).default("ORANG_PRIBADI"),
 });
 
 export const skemaGantiSandi = z

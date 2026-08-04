@@ -262,6 +262,59 @@ npm run pro -- <slug|email> tahunan  # aktifkan 1 tahun
 
 ---
 
+## Laporan pajak
+
+`/app/pajak` — menyusun **Rekapitulasi Peredaran Bruto dan PPh Final** setahun
+penuh dari catatan penjualan yang sudah ada, lalu mengunduhnya sebagai PDF.
+Fitur paket Pro, khusus pemilik.
+
+Bentuknya mengikuti yang memang diminta DJP sebagai lampiran SPT Tahunan bagi
+wajib pajak UMKM skema final: rekap peredaran bruto **per bulan** beserta PPh
+terutang masing-masing. Wajib pajak skema ini tidak diwajibkan menyelenggarakan
+pembukuan penuh — cukup pencatatan, dan pencatatan itulah yang sudah dikerjakan
+Catad setiap hari.
+
+### Aturan yang dipakai
+
+- Tarif **0,5% dari peredaran bruto** (PP 23/2018 → PP 55/2022 → **PP 20/2026**,
+  yang menghapus batas waktu bagi Orang Pribadi dan Perseroan Perorangan).
+- **Rp500 juta pertama bebas PPh** untuk Wajib Pajak Orang Pribadi, kumulatif
+  setahun. Badan tidak mendapat fasilitas ini.
+- Batas skema final **Rp4,8 miliar setahun**; di atas itu laporan memberi
+  peringatan keras dan menyuruh menghubungi konsultan pajak.
+- Setor paling lambat **tanggal 15** bulan berikutnya (PMK 81/2024 Pasal 94).
+
+### Dua keputusan perhitungan yang mudah salah
+
+**Peredaran bruto bukan `total`, melainkan `subtotal − diskon`.** Kolom `pajak`
+memuat PB1/PBJT yang dipungut dari pembeli untuk disetor ke pemerintah daerah.
+Uang itu bukan penghasilan toko; memasukkannya membuat pajak terutang lebih
+besar daripada seharusnya.
+
+**Transaksi berstatus DIBATALKAN tidak ikut.** Transaksi yang dibatalkan tidak
+pernah menjadi penghasilan.
+
+### PDF ditulis sendiri, tanpa pustaka
+
+`src/lib/pdf.ts` menulis format PDF langsung. Dokumen yang diperlukan hanya
+berisi teks, garis, dan kotak, sehingga tidak sebanding dengan menyeret pustaka
+PDF beserta binariknya ke dalam image Alpine. Dua hal yang membuatnya tetap
+kecil: hanya memakai font bawaan PDF (tidak perlu disematkan), dan semua angka
+memakai Courier yang lebarnya tetap sehingga kolom rupiah bisa dirata-kanankan
+dengan aritmetika sederhana, tanpa tabel metrik font.
+
+Contoh dokumen bisa dibuat tanpa basis data:
+
+```bash
+npx tsx scripts/contoh-laporan-pajak.ts contoh.pdf
+```
+
+> Dokumennya **kertas kerja**, bukan formulir SPT dan bukan nasihat perpajakan.
+> Ia menyiapkan angka yang perlu disalin ke SPT, bukan menggantikannya. Kalimat
+> itu ikut tercetak di dalam PDF, bukan hanya tampil di layar.
+
+---
+
 ## Panel operator
 
 `/admin` — untuk pengelola layanan Catad, bukan pemilik toko. Isinya: ringkasan
