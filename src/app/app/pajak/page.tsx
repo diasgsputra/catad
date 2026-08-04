@@ -14,8 +14,8 @@ import {
   Th,
 } from "@/components/ui";
 import { angka, persen, rupiah, tanggalPanjang } from "@/lib/format";
-import { catatanPajak, FASILITAS_BEBAS_OP } from "@/lib/pajak";
-import { dataPajakTahunan, tahunBertransaksi } from "@/lib/pajak-data";
+import { catatanPajak, KETERANGAN_REZIM, LABEL_REZIM } from "@/lib/pajak";
+import { dataPajakTahunan, konfigurasiDariToko, tahunBertransaksi } from "@/lib/pajak-data";
 import { wajibPemilik } from "@/lib/sesi";
 import { kunciTanggal } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -63,15 +63,13 @@ export default async function HalamanPajak({
     );
   }
 
-  const data = await dataPajakTahunan({
-    tokoId: k.toko.id,
-    tahun,
-    jenisWajibPajak: k.toko.jenisWajibPajak,
-  });
+  const konfigurasi = konfigurasiDariToko(k.toko);
+  const data = await dataPajakTahunan({ tokoId: k.toko.id, tahun, konfigurasi });
 
   const { pajak, labaRugi } = data;
   const adaData = pajak.totalPeredaranBruto > 0;
   const identitasLengkap = !!k.toko.npwp;
+  const totalDasar = pajak.baris.reduce((j, b) => j + b.dasarPengenaan, 0);
 
   return (
     <div className="p-4 sm:p-6">
@@ -118,11 +116,14 @@ export default async function HalamanPajak({
         </Peringatan>
       )}
 
-      {pajak.melebihiBatasFinal && (
+      {konfigurasi.rezim === "FINAL_UMKM" && pajak.melebihiBatasFinal && (
         <Peringatan nada="bahaya" className="mt-4" judul="Melampaui batas skema PPh Final">
           Peredaran bruto {tahun} sebesar {rupiah(pajak.totalPeredaranBruto)} melampaui Rp4,8
-          miliar. Skema final 0,5% tidak lagi berlaku dan kewajiban pajak Anda berubah. Angka di
-          halaman ini tidak bisa dipakai apa adanya — hubungi konsultan pajak.
+          miliar, sehingga skema final tidak lagi berlaku.{" "}
+          <Link href="/app/pengaturan" className="font-bold underline">
+            Ubah dasar perhitungan di pengaturan
+          </Link>{" "}
+          dan hubungi konsultan pajak — angka di halaman ini tidak bisa dipakai apa adanya.
         </Peringatan>
       )}
 
@@ -145,11 +146,15 @@ export default async function HalamanPajak({
               ikon="grafik"
             />
             <Statistik
-              label="PPh Final terutang"
-              nilai={rupiah(pajak.totalPphFinal)}
-              keterangan="0,5% dari dasar pengenaan"
+              label={konfigurasi.rezim === "TANPA_HITUNG" ? "Pajak" : "Pajak terutang"}
+              nilai={
+                konfigurasi.rezim === "TANPA_HITUNG" ? "dihitung di luar" : rupiah(pajak.pajakTerutang)
+              }
+              keterangan={
+                pajak.setoranBulanan ? "disetor tiap masa pajak" : "dihitung setahun sekali"
+              }
               ikon="nota"
-              aksen={pajak.totalPphFinal > 0 ? "kuning" : "netral"}
+              aksen={pajak.pajakTerutang > 0 ? "kuning" : "netral"}
             />
             <Statistik
               label="Laba bersih"
@@ -165,14 +170,14 @@ export default async function HalamanPajak({
             <Statistik
               label="Sisa fasilitas bebas"
               nilai={
-                k.toko.jenisWajibPajak === "ORANG_PRIBADI"
+                konfigurasi.fasilitasBebas > 0
                   ? rupiah(pajak.sisaFasilitas, { ringkas: true })
                   : "—"
               }
               keterangan={
-                k.toko.jenisWajibPajak === "ORANG_PRIBADI"
-                  ? `dari ${rupiah(FASILITAS_BEBAS_OP, { ringkas: true })} setahun`
-                  : "hanya untuk orang pribadi"
+                konfigurasi.fasilitasBebas > 0
+                  ? `dari ${rupiah(konfigurasi.fasilitasBebas, { ringkas: true })} setahun`
+                  : "tidak dipakai pada dasar perhitungan ini"
               }
               ikon="bintang"
             />
@@ -190,10 +195,17 @@ export default async function HalamanPajak({
                   <Th>Masa pajak</Th>
                   <Th kanan>Peredaran bruto</Th>
                   <Th kanan className="hidden md:table-cell">Kumulatif</Th>
-                  <Th kanan className="hidden lg:table-cell">Bebas PPh</Th>
-                  <Th kanan>Dasar kena</Th>
-                  <Th kanan>PPh 0,5%</Th>
-                  <Th kanan className="hidden xl:table-cell">Batas setor</Th>
+                  {/* Kolom pajak masa hanya bermakna pada skema yang disetor
+                      bulanan. Pada rezim lain pajaknya dihitung sekali setahun,
+                      jadi kolomnya dihilangkan daripada diisi nol. */}
+                  {pajak.setoranBulanan && (
+                    <>
+                      <Th kanan className="hidden lg:table-cell">Bebas PPh</Th>
+                      <Th kanan>Dasar kena</Th>
+                      <Th kanan>Pajak masa</Th>
+                      <Th kanan className="hidden xl:table-cell">Batas setor</Th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -215,26 +227,30 @@ export default async function HalamanPajak({
                         {rupiah(b.kumulatif)}
                       </span>
                     </Td>
-                    <Td kanan className="hidden lg:table-cell">
-                      <span className="angka text-[12.5px] text-tinta-3">
-                        {b.bagianBebas > 0 ? rupiah(b.bagianBebas) : "—"}
-                      </span>
-                    </Td>
-                    <Td kanan>
-                      <span className="angka text-[13px] text-tinta-2">
-                        {b.dasarPengenaan > 0 ? rupiah(b.dasarPengenaan) : "—"}
-                      </span>
-                    </Td>
-                    <Td kanan>
-                      <span className="angka text-[13px] font-bold text-tinta">
-                        {b.pphFinal > 0 ? rupiah(b.pphFinal) : "—"}
-                      </span>
-                    </Td>
-                    <Td kanan className="hidden xl:table-cell">
-                      <span className="angka text-[12px] text-tinta-4">
-                        {b.pphFinal > 0 ? b.jatuhTempoLabel : "—"}
-                      </span>
-                    </Td>
+                    {pajak.setoranBulanan && (
+                      <>
+                        <Td kanan className="hidden lg:table-cell">
+                          <span className="angka text-[12.5px] text-tinta-3">
+                            {b.bagianBebas > 0 ? rupiah(b.bagianBebas) : "—"}
+                          </span>
+                        </Td>
+                        <Td kanan>
+                          <span className="angka text-[13px] text-tinta-2">
+                            {b.dasarPengenaan > 0 ? rupiah(b.dasarPengenaan) : "—"}
+                          </span>
+                        </Td>
+                        <Td kanan>
+                          <span className="angka text-[13px] font-bold text-tinta">
+                            {b.pajakMasa > 0 ? rupiah(b.pajakMasa) : "—"}
+                          </span>
+                        </Td>
+                        <Td kanan className="hidden xl:table-cell">
+                          <span className="angka text-[12px] text-tinta-4">
+                            {b.pajakMasa > 0 ? b.jatuhTempoLabel : "—"}
+                          </span>
+                        </Td>
+                      </>
+                    )}
                   </tr>
                 ))}
 
@@ -248,18 +264,22 @@ export default async function HalamanPajak({
                     </span>
                   </Td>
                   <Td kanan className="hidden md:table-cell" />
-                  <Td kanan className="hidden lg:table-cell" />
-                  <Td kanan>
-                    <span className="angka text-[13px] font-extrabold text-tinta">
-                      {rupiah(pajak.totalDasarPengenaan)}
-                    </span>
-                  </Td>
-                  <Td kanan>
-                    <span className="angka text-[13px] font-extrabold text-merek-tua">
-                      {rupiah(pajak.totalPphFinal)}
-                    </span>
-                  </Td>
-                  <Td kanan className="hidden xl:table-cell" />
+                  {pajak.setoranBulanan && (
+                    <>
+                      <Td kanan className="hidden lg:table-cell" />
+                      <Td kanan>
+                        <span className="angka text-[13px] font-extrabold text-tinta">
+                          {rupiah(totalDasar)}
+                        </span>
+                      </Td>
+                      <Td kanan>
+                        <span className="angka text-[13px] font-extrabold text-merek-tua">
+                          {rupiah(pajak.pajakTerutang)}
+                        </span>
+                      </Td>
+                      <Td kanan className="hidden xl:table-cell" />
+                    </>
+                  )}
                 </tr>
               </tbody>
             </Tabel>
@@ -274,10 +294,10 @@ export default async function HalamanPajak({
                 <BarisLR label="Laba kotor" nilai={labaRugi.labaKotor} tebal />
                 <BarisLR label="Biaya operasional" nilai={-labaRugi.biayaOperasional} />
                 <BarisLR label="Laba bersih sebelum pajak" nilai={labaRugi.labaBersih} tebal />
-                <BarisLR label={`PPh Final ${tahun}`} nilai={-pajak.totalPphFinal} />
+                <BarisLR label={`Pajak penghasilan ${tahun}`} nilai={-pajak.pajakTerutang} />
                 <BarisLR
                   label="Laba bersih setelah pajak"
-                  nilai={labaRugi.labaBersih - pajak.totalPphFinal}
+                  nilai={labaRugi.labaBersih - pajak.pajakTerutang}
                   tebal
                   sorot
                 />
@@ -293,17 +313,68 @@ export default async function HalamanPajak({
               )}
             </Kartu>
 
-            <Kartu className="overflow-hidden">
-              <KepalaKartu ikon="info" judul="Dasar perhitungan" />
-              <ul className="space-y-2.5 p-4">
-                {catatanPajak(pajak).map((c) => (
-                  <li key={c} className="flex gap-2 text-[12.5px] leading-relaxed text-tinta-2">
-                    <span className="mt-1.5 size-1 shrink-0 rounded-full bg-tinta-4" />
-                    {c}
-                  </li>
-                ))}
-              </ul>
-            </Kartu>
+            <div className="space-y-4">
+              {/* Langkah perhitungan ditampilkan lebih dulu: pemilik toko perlu
+                  bisa menelusuri asal angkanya, bukan cuma menerima hasilnya. */}
+              <Kartu className="overflow-hidden">
+                <KepalaKartu
+                  ikon="grafik"
+                  judul="Cara angkanya didapat"
+                  keterangan={LABEL_REZIM[konfigurasi.rezim]}
+                />
+                <dl className="divide-y divide-garis">
+                  {pajak.langkah.map((l) => (
+                    <div
+                      key={l.label}
+                      className={cn(
+                        "flex items-baseline justify-between gap-3 px-4 py-2.5",
+                        l.hasil && "bg-merek-muda/40",
+                      )}
+                    >
+                      <dt className="min-w-0">
+                        <span
+                          className={cn(
+                            "block text-[12.5px]",
+                            l.hasil ? "font-bold text-tinta" : "text-tinta-2",
+                          )}
+                        >
+                          {l.label}
+                        </span>
+                        {l.rumus && (
+                          <span className="block text-[11px] text-tinta-4">{l.rumus}</span>
+                        )}
+                      </dt>
+                      <dd
+                        className={cn(
+                          "angka shrink-0 text-right text-[13px]",
+                          l.hasil ? "font-extrabold text-tinta" : "font-semibold text-tinta-2",
+                        )}
+                      >
+                        {rupiah(l.nilai)}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className="border-t border-garis px-4 py-3 text-[11.5px] leading-relaxed text-tinta-3">
+                  {KETERANGAN_REZIM[konfigurasi.rezim]}{" "}
+                  <Link href="/app/pengaturan" className="font-bold text-merek hover:underline">
+                    Ubah dasar perhitungan
+                  </Link>
+                </p>
+              </Kartu>
+
+              <Kartu className="overflow-hidden">
+                <KepalaKartu ikon="info" judul="Catatan" />
+                <ul className="space-y-2.5 p-4">
+                  {catatanPajak(pajak).map((c) => (
+                    <li key={c} className="flex gap-2 text-[12.5px] leading-relaxed text-tinta-2">
+                      <span className="mt-1.5 size-1 shrink-0 rounded-full bg-tinta-4" />
+                      {c}
+                    </li>
+                  ))}
+                </ul>
+              </Kartu>
+            </div>
           </div>
 
           <Peringatan nada="info" className="mt-5" judul="Sebelum dilaporkan">

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { konteks } from "@/lib/sesi";
 import { kunciTanggal, tanggalPanjang } from "@/lib/format";
 import { laporanPajakPdf, namaBerkasLaporanPajak } from "@/lib/laporan-pajak-pdf";
-import { dataPajakTahunan } from "@/lib/pajak-data";
+import { dataPajakTahunan, konfigurasiDariToko } from "@/lib/pajak-data";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
   const data = await dataPajakTahunan({
     tokoId: k.toko.id,
     tahun,
-    jenisWajibPajak: k.toko.jenisWajibPajak,
+    konfigurasi: konfigurasiDariToko(k.toko),
   });
 
   const pdf = laporanPajakPdf({

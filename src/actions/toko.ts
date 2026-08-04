@@ -40,6 +40,14 @@ export async function simpanPengaturanToko(
     npwp: data.get("npwp") || undefined,
     namaWajibPajak: data.get("namaWajibPajak") || undefined,
     jenisWajibPajak: data.get("jenisWajibPajak") || "ORANG_PRIBADI",
+    rezimPajak: data.get("rezimPajak") || "FINAL_UMKM",
+    tarifFinalPersen: data.get("tarifFinalPersen") ?? 0.5,
+    fasilitasBebas: data.get("fasilitasBebas") ?? 500_000_000,
+    normaPersen: data.get("normaPersen") ?? 25,
+    ptkpSetahun: data.get("ptkpSetahun") ?? 54_000_000,
+    tarifBadanPersen: data.get("tarifBadanPersen") ?? 22,
+    // Kotak centang tidak terkirim sama sekali saat tidak dicentang.
+    pakai31E: data.get("pakai31E") === "on",
   });
 
   if (!hasil.success) return { galat: galatForm(hasil.error) };
@@ -58,6 +66,14 @@ export async function simpanPengaturanToko(
       npwp: d.npwp || null,
       namaWajibPajak: d.namaWajibPajak || null,
       jenisWajibPajak: d.jenisWajibPajak,
+      rezimPajak: d.rezimPajak,
+      // Persen dari formulir disimpan sebagai basis poin bilangan bulat.
+      tarifFinalBps: Math.round(d.tarifFinalPersen * 100),
+      fasilitasBebas: d.fasilitasBebas,
+      normaBps: Math.round(d.normaPersen * 100),
+      ptkpSetahun: d.ptkpSetahun,
+      tarifBadanBps: Math.round(d.tarifBadanPersen * 100),
+      pakai31E: d.pakai31E,
     },
   });
 

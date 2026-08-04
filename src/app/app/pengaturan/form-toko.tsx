@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { Bidang, Kolom, Peringatan, Pilih, Tombol } from "@/components/ui";
 import { gantiSandi, simpanPengaturanToko } from "@/actions/toko";
 import type { HasilAksi } from "@/actions/produk";
+import { FormPajak, type NilaiPajak } from "./form-pajak";
 
 const AWAL: HasilAksi = {};
 
@@ -33,6 +34,13 @@ export function FormToko({
     npwp: string | null;
     namaWajibPajak: string | null;
     jenisWajibPajak: "ORANG_PRIBADI" | "BADAN";
+    rezimPajak: NilaiPajak["rezimPajak"];
+    tarifFinalBps: number;
+    fasilitasBebas: number;
+    normaBps: number;
+    ptkpSetahun: number;
+    tarifBadanBps: number;
+    pakai31E: boolean;
   };
   bolehUbah: boolean;
 }) {
@@ -196,6 +204,20 @@ export function FormToko({
           />
         </Bidang>
       </div>
+
+      <FormPajak
+        nilai={{
+          rezimPajak: toko.rezimPajak,
+          tarifFinalBps: toko.tarifFinalBps,
+          fasilitasBebas: toko.fasilitasBebas,
+          normaBps: toko.normaBps,
+          ptkpSetahun: toko.ptkpSetahun,
+          tarifBadanBps: toko.tarifBadanBps,
+          pakai31E: toko.pakai31E,
+        }}
+        bolehUbah={bolehUbah}
+        galat={keadaan.galat}
+      />
 
       {bolehUbah && (
         <div className="flex justify-end pt-1">

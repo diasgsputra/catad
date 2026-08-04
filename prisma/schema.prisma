@@ -28,6 +28,23 @@ enum JenisWajibPajak {
   BADAN
 }
 
+/// Cara pajak penghasilan dihitung. Pemakai Catad tidak seragam: apotek yang
+/// omzetnya melewati Rp4,8 miliar wajib pembukuan, kafe berbentuk PT dikenai
+/// PPh badan, pedagang yang memilih pencatatan memakai Norma. Memaku satu
+/// rezim berarti menyodorkan angka yang salah ke sebagian besar pemakai.
+enum RezimPajak {
+  /// PPh Final dari peredaran bruto (PP 23/2018 s.t.d.d PP 20/2026).
+  FINAL_UMKM
+  /// Norma Penghitungan Penghasilan Neto, lalu tarif Pasal 17.
+  NPPN
+  /// Pembukuan, laba bersih dikurangi PTKP, lalu tarif Pasal 17.
+  PEMBUKUAN_OP
+  /// Pembukuan, laba bersih dikenai tarif PPh badan.
+  PEMBUKUAN_BADAN
+  /// Catad hanya menyusun rekap; pajaknya dihitung di luar aplikasi.
+  TANPA_HITUNG
+}
+
 enum MetodeBayar {
   TUNAI
   QRIS
@@ -93,6 +110,23 @@ model Toko {
   /// Nama wajib pajak bila berbeda dari nama toko.
   namaWajibPajak  String?
   jenisWajibPajak JenisWajibPajak @default(ORANG_PRIBADI)
+
+  // Parameter perhitungan pajak. Semua tarif disimpan sebagai basis poin
+  // (bilangan bulat, 100 bps = 1%) supaya tidak ada galat pembulatan pecahan
+  // desimal yang menumpuk pada angka rupiah yang besar.
+  rezimPajak      RezimPajak @default(FINAL_UMKM)
+  /// Tarif PPh final. 50 bps = 0,50%.
+  tarifFinalBps   Int        @default(50)
+  /// Peredaran bruto bebas PPh setahun. 0 berarti tidak ada fasilitas.
+  fasilitasBebas  Int        @default(500000000)
+  /// Persentase Norma Penghitungan Penghasilan Neto. 2500 bps = 25%.
+  normaBps        Int        @default(2500)
+  /// Penghasilan Tidak Kena Pajak setahun.
+  ptkpSetahun     Int        @default(54000000)
+  /// Tarif PPh badan. 2200 bps = 22%.
+  tarifBadanBps   Int        @default(2200)
+  /// Memakai fasilitas pengurangan tarif Pasal 31E.
+  pakai31E        Boolean    @default(true)
 
   dibuatPada    DateTime @default(now())
   diubahPada    DateTime @updatedAt

@@ -39,6 +39,13 @@ export type KonteksToko = {
     npwp: string | null;
     namaWajibPajak: string | null;
     jenisWajibPajak: "ORANG_PRIBADI" | "BADAN";
+    rezimPajak: "FINAL_UMKM" | "NPPN" | "PEMBUKUAN_OP" | "PEMBUKUAN_BADAN" | "TANPA_HITUNG";
+    tarifFinalBps: number;
+    fasilitasBebas: number;
+    normaBps: number;
+    ptkpSetahun: number;
+    tarifBadanBps: number;
+    pakai31E: boolean;
   };
   paket: StatusPaket;
 };
@@ -72,6 +79,13 @@ export async function konteks(): Promise<KonteksToko> {
           npwp: true,
           namaWajibPajak: true,
           jenisWajibPajak: true,
+          rezimPajak: true,
+          tarifFinalBps: true,
+          fasilitasBebas: true,
+          normaBps: true,
+          ptkpSetahun: true,
+          tarifBadanBps: true,
+          pakai31E: true,
         },
       },
     },

@@ -1,5 +1,5 @@
 import { rupiah } from "./format";
-import { catatanPajak, type JenisWajibPajak } from "./pajak";
+import { catatanPajak, LABEL_REZIM } from "./pajak";
 import type { DataPajakTahunan } from "./pajak-data";
 import {
   A4,
@@ -34,7 +34,7 @@ export type IdentitasPajak = {
   namaToko: string;
   namaWajibPajak: string | null;
   npwp: string | null;
-  jenisWajibPajak: JenisWajibPajak;
+  jenisWajibPajak: "ORANG_PRIBADI" | "BADAN";
   jenisUsaha: string;
   alamat: string | null;
 };
@@ -109,18 +109,32 @@ class Kanvas {
   }
 }
 
-function kepalaDokumen(k: Kanvas, identitas: IdentitasPajak, tahun: number) {
+function kepalaDokumen(k: Kanvas, data: DataPajakTahunan) {
+  // Judulnya mengikuti rezim yang dipakai. Menyebut "PPh Final" pada dokumen
+  // yang dihitung dengan Norma atau pembukuan akan menyesatkan pembacanya.
+  const judul =
+    data.pajak.konfigurasi.rezim === "FINAL_UMKM"
+      ? "REKAPITULASI PEREDARAN BRUTO DAN PPh FINAL"
+      : "REKAPITULASI PEREDARAN BRUTO DAN PAJAK PENGHASILAN";
+
   k.ruang(18);
-  k.tambah(
-    teks(KIRI, k.y, "REKAPITULASI PEREDARAN BRUTO DAN PPh FINAL", {
-      font: "Helvetica-Bold",
-      ukuran: 13,
-    }),
-  );
+  k.tambah(teks(KIRI, k.y, judul, { font: "Helvetica-Bold", ukuran: 12.5 }));
 
   k.ruang(14);
   k.tambah(
-    teks(KIRI, k.y, `Tahun Pajak ${tahun}`, { font: "Helvetica-Bold", ukuran: 10, abu: 0.35 }),
+    teks(KIRI, k.y, `Tahun Pajak ${data.tahun}`, {
+      font: "Helvetica-Bold",
+      ukuran: 10,
+      abu: 0.35,
+    }),
+  );
+
+  k.ruang(11);
+  k.tambah(
+    teks(KIRI, k.y, `Dasar perhitungan: ${LABEL_REZIM[data.pajak.konfigurasi.rezim]}`, {
+      ukuran: 8.5,
+      abu: 0.4,
+    }),
   );
 
   k.ruang(8);
@@ -151,39 +165,48 @@ function blokIdentitas(k: Kanvas, identitas: IdentitasPajak) {
   if (identitas.alamat) barisIdentitas(k, "Alamat usaha", identitas.alamat);
 }
 
-function kepalaTabel(k: Kanvas) {
+function tabelBulanan(k: Kanvas, data: DataPajakTahunan) {
+  // Kolom pajak masa hanya bermakna pada skema yang disetor bulanan. Pada
+  // rezim lain pajaknya dihitung sekali setahun, jadi kolomnya dihilangkan
+  // daripada diisi nol yang membingungkan.
+  const bulanan = data.pajak.setoranBulanan;
+  const totalDasar = data.pajak.baris.reduce((j, b) => j + b.dasarPengenaan, 0);
+
   k.ruang(20);
   k.tambah(
     kotak(KIRI, k.y - 4, KANAN - KIRI, 15, 0.9),
     teks(KIRI + 4, k.y, "Masa Pajak", { font: "Helvetica-Bold", ukuran: 7.5 }),
     teksKanan(KOLOM.bruto, k.y, "Peredaran Bruto", { font: "Courier-Bold", ukuran: 7.5 }),
-    teksKanan(KOLOM.bebas, k.y, "Bebas PPh", { font: "Courier-Bold", ukuran: 7.5 }),
-    teksKanan(KOLOM.dasar, k.y, "Dasar Kena", { font: "Courier-Bold", ukuran: 7.5 }),
-    teksKanan(KOLOM.pph, k.y, "PPh 0,5%", { font: "Courier-Bold", ukuran: 7.5 }),
-    teks(KOLOM.tempo, k.y, "Batas Setor", { font: "Helvetica-Bold", ukuran: 7.5 }),
+    teksKanan(KOLOM.bebas, k.y, "Kumulatif", { font: "Courier-Bold", ukuran: 7.5 }),
+    ...(bulanan
+      ? [
+          teksKanan(KOLOM.dasar, k.y, "Dasar Kena", { font: "Courier-Bold", ukuran: 7.5 }),
+          teksKanan(KOLOM.pph, k.y, "Pajak Masa", { font: "Courier-Bold", ukuran: 7.5 }),
+          teks(KOLOM.tempo, k.y, "Batas Setor", { font: "Helvetica-Bold", ukuran: 7.5 }),
+        ]
+      : []),
   );
-}
-
-function tabelBulanan(k: Kanvas, data: DataPajakTahunan) {
-  kepalaTabel(k);
 
   for (const b of data.pajak.baris) {
     k.ruang(13);
     k.tambah(
       teks(KIRI + 4, k.y, b.namaBulan, { ukuran: 8 }),
       teksKanan(KOLOM.bruto, k.y, nilai(b.peredaranBruto), { ukuran: 8 }),
-      teksKanan(KOLOM.bebas, k.y, nilai(b.bagianBebas), { ukuran: 8, abu: 0.45 }),
-      teksKanan(KOLOM.dasar, k.y, nilai(b.dasarPengenaan), { ukuran: 8 }),
-      teksKanan(KOLOM.pph, k.y, nilai(b.pphFinal), { ukuran: 8, font: "Courier-Bold" }),
-      teks(KOLOM.tempo, k.y, b.pphFinal > 0 ? b.jatuhTempoLabel : "-", {
-        ukuran: 7.5,
-        abu: 0.45,
-      }),
+      teksKanan(KOLOM.bebas, k.y, nilai(b.kumulatif), { ukuran: 8, abu: 0.45 }),
+      ...(bulanan
+        ? [
+            teksKanan(KOLOM.dasar, k.y, nilai(b.dasarPengenaan), { ukuran: 8 }),
+            teksKanan(KOLOM.pph, k.y, nilai(b.pajakMasa), { ukuran: 8, font: "Courier-Bold" }),
+            teks(KOLOM.tempo, k.y, b.pajakMasa > 0 ? b.jatuhTempoLabel : "-", {
+              ukuran: 7.5,
+              abu: 0.45,
+            }),
+          ]
+        : []),
     );
     k.tambah(garis(KIRI, k.y - 4, KANAN, { tebal: 0.3, abu: 0.85 }));
   }
 
-  // Baris jumlah
   k.ruang(16);
   k.tambah(
     garis(KIRI, k.y + 9, KANAN, { tebal: 0.8, abu: 0.3 }),
@@ -192,17 +215,46 @@ function tabelBulanan(k: Kanvas, data: DataPajakTahunan) {
       font: "Courier-Bold",
       ukuran: 8,
     }),
-    teksKanan(KOLOM.dasar, k.y, nilai(data.pajak.totalDasarPengenaan), {
-      font: "Courier-Bold",
-      ukuran: 8,
-    }),
-    teksKanan(KOLOM.pph, k.y, nilai(data.pajak.totalPphFinal), {
-      font: "Courier-Bold",
-      ukuran: 8,
-    }),
+    ...(bulanan
+      ? [
+          teksKanan(KOLOM.dasar, k.y, nilai(totalDasar), { font: "Courier-Bold", ukuran: 8 }),
+          teksKanan(KOLOM.pph, k.y, nilai(data.pajak.pajakTerutang), {
+            font: "Courier-Bold",
+            ukuran: 8,
+          }),
+        ]
+      : []),
   );
   k.ruang(4);
   k.tambah(garis(KIRI, k.y, KANAN, { tebal: 0.8, abu: 0.3 }));
+}
+
+/** Langkah perhitungan pajak, sesuai rezim yang dipakai. */
+function blokPerhitungan(k: Kanvas, data: DataPajakTahunan) {
+  k.ruang(22);
+  k.tambah(teks(KIRI, k.y, "PERHITUNGAN PAJAK", { font: "Helvetica-Bold", ukuran: 8.5 }));
+  k.ruang(4);
+  k.tambah(garis(KIRI, k.y, KANAN, { tebal: 0.5, abu: 0.6 }));
+
+  for (const langkah of data.pajak.langkah) {
+    k.ruang(13);
+    if (langkah.hasil) {
+      k.tambah(garis(KIRI, k.y + 9, KOLOM.dasar, { tebal: 0.5, abu: 0.6 }));
+    }
+    k.tambah(
+      teks(KIRI + 4, k.y, langkah.label, {
+        ukuran: 8.5,
+        font: langkah.hasil ? "Helvetica-Bold" : "Helvetica",
+      }),
+      teksKanan(KOLOM.dasar, k.y, rupiah(langkah.nilai, { tanpaSimbol: true }), {
+        ukuran: 8.5,
+        font: langkah.hasil ? "Courier-Bold" : "Courier",
+      }),
+      ...(langkah.rumus
+        ? [teks(KOLOM.dasar + 12, k.y, langkah.rumus, { ukuran: 7, abu: 0.5 })]
+        : []),
+    );
+  }
 }
 
 function barisAngka(
@@ -239,8 +291,8 @@ function blokLabaRugi(k: Kanvas, data: DataPajakTahunan) {
   barisAngka(k, "Laba kotor", lr.labaKotor, { tebal: true, garisAtas: true });
   barisAngka(k, "Biaya operasional", -lr.biayaOperasional);
   barisAngka(k, "Laba bersih sebelum pajak", lr.labaBersih, { tebal: true, garisAtas: true });
-  barisAngka(k, `PPh Final ${data.tahun}`, -data.pajak.totalPphFinal);
-  barisAngka(k, "Laba bersih setelah pajak", lr.labaBersih - data.pajak.totalPphFinal, {
+  barisAngka(k, `Pajak penghasilan ${data.tahun}`, -data.pajak.pajakTerutang);
+  barisAngka(k, "Laba bersih setelah pajak", lr.labaBersih - data.pajak.pajakTerutang, {
     tebal: true,
     garisAtas: true,
   });
@@ -311,15 +363,16 @@ export function laporanPajakPdf({
 }): Uint8Array {
   const k = new Kanvas();
 
-  kepalaDokumen(k, identitas, data.tahun);
+  kepalaDokumen(k, data);
   blokIdentitas(k, identitas);
   tabelBulanan(k, data);
+  blokPerhitungan(k, data);
   blokLabaRugi(k, data);
   blokCatatan(k, data);
   kakiDokumen(k, dibuatLabel);
 
   return buatPdf(k.halaman, {
-    judul: `Rekapitulasi Peredaran Bruto dan PPh Final ${data.tahun} - ${identitas.namaToko}`,
+    judul: `Rekapitulasi Peredaran Bruto dan Pajak Penghasilan ${data.tahun} - ${identitas.namaToko}`,
     penulis: "Catad",
     dibuatPada,
   });

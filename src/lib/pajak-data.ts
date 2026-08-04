@@ -1,11 +1,11 @@
 import { db } from "./db";
 import { kunciTanggal } from "./format";
 import {
-  hitungPajakTahunan,
+  hitungPajak,
   peredaranBrutoTransaksi,
   ringkasLabaRugi,
-  type HasilPajakTahunan,
-  type JenisWajibPajak,
+  type HasilPajak,
+  type KonfigurasiPajak,
   type RingkasanLabaRugi,
 } from "./pajak";
 
@@ -26,7 +26,7 @@ export type BulanKeuangan = {
 export type DataPajakTahunan = {
   tahun: number;
   bulan: BulanKeuangan[];
-  pajak: HasilPajakTahunan;
+  pajak: HasilPajak;
   labaRugi: RingkasanLabaRugi;
   /** Pajak daerah (PB1/PBJT) yang dipungut dari pembeli sepanjang tahun. */
   pajakDaerahDipungut: number;
@@ -60,11 +60,11 @@ function indeksBulan(tanggal: Date): number {
 export async function dataPajakTahunan({
   tokoId,
   tahun,
-  jenisWajibPajak,
+  konfigurasi,
 }: {
   tokoId: string;
   tahun: number;
-  jenisWajibPajak: JenisWajibPajak;
+  konfigurasi: KonfigurasiPajak;
 }): Promise<DataPajakTahunan> {
   const { mulai, selesai } = rentangLonggar(tahun);
 
@@ -111,19 +111,49 @@ export async function dataPajakTahunan({
     bulan[indeksBulan(p.tanggal)].biayaOperasional += p.jumlah;
   }
 
-  const pajak = hitungPajakTahunan({
-    omzetBulanan: bulan.map((b) => b.peredaranBruto),
-    jenis: jenisWajibPajak,
-    tahun,
-  });
-
+  // Laba rugi dihitung lebih dulu: rezim pembukuan memakai laba bersih sebagai
+  // dasar pengenaan, jadi urutannya tidak bisa dibalik.
   const labaRugi = ringkasLabaRugi({
-    peredaranBruto: pajak.totalPeredaranBruto,
+    peredaranBruto: bulan.reduce((j, b) => j + b.peredaranBruto, 0),
     hargaPokokPenjualan: bulan.reduce((j, b) => j + b.hargaPokokPenjualan, 0),
     biayaOperasional: bulan.reduce((j, b) => j + b.biayaOperasional, 0),
   });
 
+  const pajak = hitungPajak({
+    omzetBulanan: bulan.map((b) => b.peredaranBruto),
+    konfigurasi,
+    tahun,
+    labaBersih: labaRugi.labaBersih,
+  });
+
   return { tahun, bulan, pajak, labaRugi, pajakDaerahDipungut };
+}
+
+/**
+ * Menyusun konfigurasi perhitungan dari baris Toko.
+ *
+ * Dipisah supaya halaman, rute unduhan, dan pengujian memakai pemetaan yang
+ * sama persis — konfigurasi pajak yang berbeda antara layar dan PDF adalah
+ * kesalahan yang tidak akan disadari sampai dokumennya sudah dilaporkan.
+ */
+export function konfigurasiDariToko(toko: {
+  rezimPajak: KonfigurasiPajak["rezim"];
+  tarifFinalBps: number;
+  fasilitasBebas: number;
+  normaBps: number;
+  ptkpSetahun: number;
+  tarifBadanBps: number;
+  pakai31E: boolean;
+}): KonfigurasiPajak {
+  return {
+    rezim: toko.rezimPajak,
+    tarifFinalBps: toko.tarifFinalBps,
+    fasilitasBebas: toko.fasilitasBebas,
+    normaBps: toko.normaBps,
+    ptkp: toko.ptkpSetahun,
+    tarifBadanBps: toko.tarifBadanBps,
+    pakai31E: toko.pakai31E,
+  };
 }
 
 /**

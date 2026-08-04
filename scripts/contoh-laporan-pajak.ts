@@ -10,7 +10,13 @@
 
 import { writeFileSync } from "node:fs";
 import { laporanPajakPdf } from "../src/lib/laporan-pajak-pdf";
-import { hitungPajakTahunan, ringkasLabaRugi } from "../src/lib/pajak";
+import {
+  KONFIGURASI_BAWAAN,
+  LABEL_REZIM,
+  hitungPajak,
+  ringkasLabaRugi,
+  type RezimPajak,
+} from "../src/lib/pajak";
 import type { DataPajakTahunan } from "../src/lib/pajak-data";
 
 const JT = 1_000_000;
@@ -32,10 +38,25 @@ const omzetBulanan = [
   103 * JT,
 ];
 
-const pajak = hitungPajakTahunan({ omzetBulanan, jenis: "ORANG_PRIBADI", tahun: TAHUN });
+const rezim = (process.argv[3] ?? "FINAL_UMKM") as RezimPajak;
+const konfigurasi = { ...KONFIGURASI_BAWAAN, rezim };
 
-const hpp = Math.round(pajak.totalPeredaranBruto * 0.68);
-const biaya = Math.round(pajak.totalPeredaranBruto * 0.14);
+const brutoSetahun = omzetBulanan.reduce((j, n) => j + n, 0);
+const hpp = Math.round(brutoSetahun * 0.68);
+const biaya = Math.round(brutoSetahun * 0.14);
+
+const labaRugiAwal = ringkasLabaRugi({
+  peredaranBruto: brutoSetahun,
+  hargaPokokPenjualan: hpp,
+  biayaOperasional: biaya,
+});
+
+const pajak = hitungPajak({
+  omzetBulanan,
+  konfigurasi,
+  tahun: TAHUN,
+  labaBersih: labaRugiAwal.labaBersih,
+});
 
 const data: DataPajakTahunan = {
   tahun: TAHUN,
@@ -47,12 +68,8 @@ const data: DataPajakTahunan = {
     jumlahTransaksi: Math.round(bruto / 25_000),
   })),
   pajak,
-  labaRugi: ringkasLabaRugi({
-    peredaranBruto: pajak.totalPeredaranBruto,
-    hargaPokokPenjualan: hpp,
-    biayaOperasional: biaya,
-  }),
-  pajakDaerahDipungut: Math.round(pajak.totalPeredaranBruto * 0.1),
+  labaRugi: labaRugiAwal,
+  pajakDaerahDipungut: Math.round(brutoSetahun * 0.1),
 };
 
 const pdf = laporanPajakPdf({
@@ -73,7 +90,13 @@ const tujuan = process.argv[2] ?? "contoh-laporan-pajak.pdf";
 writeFileSync(tujuan, pdf);
 
 console.log(`Contoh laporan ditulis ke ${tujuan} (${pdf.length} bita).`);
+console.log(`Dasar perhitungan: ${LABEL_REZIM[rezim]}`);
 console.log(`Peredaran bruto  : Rp${pajak.totalPeredaranBruto.toLocaleString("id-ID")}`);
-console.log(`Dasar pengenaan  : Rp${pajak.totalDasarPengenaan.toLocaleString("id-ID")}`);
-console.log(`PPh Final 0,5%   : Rp${pajak.totalPphFinal.toLocaleString("id-ID")}`);
-console.log(`Fasilitas habis  : bulan ke-${pajak.bulanFasilitasHabis}`);
+console.log(`Laba bersih      : Rp${labaRugiAwal.labaBersih.toLocaleString("id-ID")}`);
+console.log(`Pajak terutang   : Rp${pajak.pajakTerutang.toLocaleString("id-ID")}`);
+console.log("");
+console.log("Langkah perhitungan:");
+for (const l of pajak.langkah) {
+  const tanda = l.hasil ? "=" : " ";
+  console.log(`  ${tanda} ${l.label.padEnd(34)} Rp${l.nilai.toLocaleString("id-ID")}`);
+}

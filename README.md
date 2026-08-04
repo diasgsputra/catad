@@ -274,15 +274,36 @@ terutang masing-masing. Wajib pajak skema ini tidak diwajibkan menyelenggarakan
 pembukuan penuh — cukup pencatatan, dan pencatatan itulah yang sudah dikerjakan
 Catad setiap hari.
 
-### Aturan yang dipakai
+### Dasar perhitungan bisa dipilih
 
-- Tarif **0,5% dari peredaran bruto** (PP 23/2018 → PP 55/2022 → **PP 20/2026**,
-  yang menghapus batas waktu bagi Orang Pribadi dan Perseroan Perorangan).
-- **Rp500 juta pertama bebas PPh** untuk Wajib Pajak Orang Pribadi, kumulatif
-  setahun. Badan tidak mendapat fasilitas ini.
-- Batas skema final **Rp4,8 miliar setahun**; di atas itu laporan memberi
-  peringatan keras dan menyuruh menghubungi konsultan pajak.
-- Setor paling lambat **tanggal 15** bulan berikutnya (PMK 81/2024 Pasal 94).
+Pemakai Catad tidak seragam. Apotek yang omzetnya melewati Rp4,8 miliar wajib
+pembukuan dan tidak boleh lagi memakai skema final; kafe berbentuk PT dikenai
+PPh badan; pedagang yang memilih pencatatan memakai Norma dengan persentase
+yang berbeda menurut jenis usaha dan wilayah. Memaku satu rezim berarti
+menyodorkan angka yang salah kepada sebagian besar pemakai — dan angka pajak
+yang salah lebih berbahaya daripada tidak ada angka sama sekali.
+
+Rezim dan parameternya disimpan **per toko**, diatur di `/app/pengaturan`:
+
+| Rezim | Dasar pengenaan | Parameter yang bisa diatur |
+|---|---|---|
+| **PPh Final UMKM** | Peredaran bruto | Tarif (bawaan 0,5%), fasilitas bebas (bawaan Rp500 juta) |
+| **Norma (NPPN)** | Peredaran bruto × norma, lalu Pasal 17 | Persentase norma, PTKP |
+| **Pembukuan — orang pribadi** | Laba bersih − PTKP, lalu Pasal 17 | PTKP |
+| **Pembukuan — badan** | Laba bersih, tarif PPh badan | Tarif (bawaan 22%), fasilitas Pasal 31E |
+| **Rekap saja** | — | Catad hanya menyusun rekap; pajak dihitung di luar |
+
+Yang tetap dipaku di kode hanya yang ditetapkan undang-undang dan berlaku
+seragam: lapisan tarif Pasal 17 (5/15/25/30/35% menurut UU HPP), ambang Rp4,8
+miliar, ambang Rp50 miliar untuk Pasal 31E, dan batas setor tanggal 15 bulan
+berikutnya (PMK 81/2024 Pasal 94).
+
+Dasar hukum skema final: PP 23/2018 → PP 55/2022 → **PP 20/2026**, yang
+menghapus batas waktu bagi Orang Pribadi dan Perseroan Perorangan.
+
+Catatan pada dokumen **diturunkan dari konfigurasi yang benar-benar dipakai**,
+bukan kalimat tetap. Dokumen berbasis Norma tidak akan menyebut PP 23/2018,
+karena menyebut dasar hukum yang tidak dipakai justru menyesatkan.
 
 ### Dua keputusan perhitungan yang mudah salah
 
@@ -303,10 +324,12 @@ kecil: hanya memakai font bawaan PDF (tidak perlu disematkan), dan semua angka
 memakai Courier yang lebarnya tetap sehingga kolom rupiah bisa dirata-kanankan
 dengan aritmetika sederhana, tanpa tabel metrik font.
 
-Contoh dokumen bisa dibuat tanpa basis data:
+Contoh dokumen bisa dibuat tanpa basis data, untuk rezim mana pun:
 
 ```bash
-npx tsx scripts/contoh-laporan-pajak.ts contoh.pdf
+npx tsx scripts/contoh-laporan-pajak.ts contoh.pdf FINAL_UMKM
+npx tsx scripts/contoh-laporan-pajak.ts contoh.pdf NPPN
+npx tsx scripts/contoh-laporan-pajak.ts contoh.pdf PEMBUKUAN_BADAN
 ```
 
 > Dokumennya **kertas kerja**, bukan formulir SPT dan bukan nasihat perpajakan.

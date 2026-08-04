@@ -137,6 +137,42 @@ export const skemaPengaturanToko = z.object({
     .optional(),
   namaWajibPajak: z.string().trim().max(60).optional(),
   jenisWajibPajak: z.enum(["ORANG_PRIBADI", "BADAN"]).default("ORANG_PRIBADI"),
+
+  // ── Dasar perhitungan pajak ──
+  // Tarif dikirim sebagai persen agar mudah diisi orang, lalu disimpan sebagai
+  // basis poin bilangan bulat. Batas atasnya longgar supaya tidak menghalangi
+  // perubahan aturan, tetapi tetap menolak angka yang jelas keliru.
+  rezimPajak: z
+    .enum(["FINAL_UMKM", "NPPN", "PEMBUKUAN_OP", "PEMBUKUAN_BADAN", "TANPA_HITUNG"])
+    .default("FINAL_UMKM"),
+  tarifFinalPersen: z.coerce
+    .number()
+    .min(0, "Tarif tidak boleh negatif")
+    .max(50, "Tarif terlalu besar")
+    .default(0.5),
+  fasilitasBebas: z.coerce
+    .number()
+    .int("Isi angka bulat tanpa titik")
+    .min(0, "Tidak boleh negatif")
+    .max(2_000_000_000, "Terlalu besar")
+    .default(500_000_000),
+  normaPersen: z.coerce
+    .number()
+    .min(0, "Tidak boleh negatif")
+    .max(100, "Norma tidak mungkin lebih dari 100%")
+    .default(25),
+  ptkpSetahun: z.coerce
+    .number()
+    .int("Isi angka bulat tanpa titik")
+    .min(0, "Tidak boleh negatif")
+    .max(1_000_000_000, "Terlalu besar")
+    .default(54_000_000),
+  tarifBadanPersen: z.coerce
+    .number()
+    .min(0, "Tidak boleh negatif")
+    .max(50, "Tarif terlalu besar")
+    .default(22),
+  pakai31E: z.coerce.boolean().default(false),
 });
 
 export const skemaGantiSandi = z
