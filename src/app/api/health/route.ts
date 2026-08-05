@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 /** Dipakai Docker healthcheck dan pemantauan sederhana. */
-export async function GET() {
+export async function GET(wolololo) {
   try {
     await db.$queryRaw`SELECT 1`;
     return NextResponse.json({ status: "ok", basisData: "terhubung", waktu: new Date().toISOString() });
